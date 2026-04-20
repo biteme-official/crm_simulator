@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Weekly Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#09090b;--bg1:#0f0f12;--bg2:#16161a;--bg3:#1e1e24;--bg4:#27272f;--bg5:#303038;
+  --b1:rgba(255,255,255,.05);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.17);
+  --t1:#f0f0f2;--t2:#9090a0;--t3:#55555f;--t4:#30303a;
+  --g:#20d07a;--gdim:rgba(32,208,122,.11);--gbdr:rgba(32,208,122,.28);
+  --bl:#4f9cf8;--bldim:rgba(79,156,248,.11);--blbdr:rgba(79,156,248,.28);
+  --am:#f5a623;--amdim:rgba(245,166,35,.11);--ambdr:rgba(245,166,35,.28);
+  --re:#e05050;--redim:rgba(224,80,80,.11);--rebdr:rgba(224,80,80,.28);
+  --pu:#a78bfa;--pudim:rgba(167,139,250,.11);--pubdr:rgba(167,139,250,.28);
+  --rad:9px;--rad-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Pretendard',sans-serif;background:var(--bg0);color:var(--t1);font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+
+/* Layout */
+.root{display:grid;grid-template-columns:360px 1fr;height:100vh}
+.sidebar{background:var(--bg1);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow:hidden}
+.main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg0)}
+
+/* Header */
+.hdr{padding:15px 20px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3);letter-spacing:.1em}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--g);box-shadow:0 0 8px var(--g)}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--b1);flex-shrink:0}
+.tab{flex:1;padding:10px 0;font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;text-align:center;cursor:pointer;color:var(--t3);border-bottom:2px solid transparent;transition:all .15s}
+.tab:hover{color:var(--t2)}
+.tab.on{color:var(--t1);border-bottom-color:var(--g)}
+
+/* Scroll */
+.scr{flex:1;overflow-y:auto;padding:16px 18px}
+.foot{padding:12px 18px;border-top:1px solid var(--b1);flex-shrink:0}
+
+/* Form */
+input,select,textarea{font-family:'Pretendard',sans-serif;font-size:13px;color:var(--t1);background:var(--bg2);border:1px solid var(--b2);border-radius:var(--rad-sm);padding:7px 9px;width:100%;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b3)}
+select option{background:var(--bg3)}
+.lbl{display:block;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--t3);letter-spacing:.05em;margin-bottom:4px;text-transform:uppercase}
+.field{margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* Buttons */
+.btn{padding:8px 14px;border-radius:var(--rad-sm);font-size:13px;font-family:'Pretendard',sans-serif;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid var(--b2);background:var(--bg3);color:var(--t1)}
+.btn:hover{border-color:var(--b3);background:var(--bg4)}
+.btn-g{background:var(--gdim);border-color:var(--gbdr);color:var(--g)}
+.btn-g:hover{background:rgba(32,208,122,.2)}
+.btn-full{width:100%;text-align:center}
+.btn-sm{padding:3px 8px;font-size:10px;border-radius:20px;font-family:'JetBrains Mono',monospace}
+.btn-ghost{background:transparent;border:none;color:var(--t3);padding:2px 5px;font-size:11px;cursor:pointer}
+.btn-ghost:hover{color:var(--t2)}
+
+/* Badges */
+.bdg{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;white-space:nowrap}
+.b-ex{background:rgba(32,208,122,.15);color:var(--g);border:1px solid var(--gbdr)}
+.b-ct{background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr)}
+.b-cv{background:var(--pudim);color:var(--pu);border:1px solid var(--pubdr)}
+.b-nb{background:rgba(255,255,255,.05);color:var(--t2);border:1px solid var(--b2)}
+.b-lw{background:var(--redim);color:var(--re);border:1px solid var(--rebdr)}
+.b-ok{background:var(--gdim);color:var(--g);border:1px solid var(--gbdr)}
+.b-wn{background:var(--amdim);color:var(--am);border:1px solid var(--ambdr)}
+.b-ex2{background:var(--redim);color:var(--re);border:1px solid var(--rebdr)}
+.tag{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr);font-family:'JetBrains Mono',monospace;letter-spacing:.03em}
+
+/* Divider */
+.dvd{border:none;border-top:1px solid var(--b1);margin:12px 0}
+
+/* Slider */
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.slider-lbl{font-size:11px;color:var(--t2);min-width:32px;font-family:'JetBrains Mono',monospace}
+.slider-val{font-size:11px;font-weight:600;min-width:36px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--g)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;background:var(--bg4);border:none;border-radius:2px;padding:0;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--g);cursor:pointer;box-shadow:0 0 6px var(--gdim)}
+input[type=range]:focus{outline:none}
+
+/* Weekly calendar */
+.cal{display:grid;gap:8px;margin-bottom:0}
+.day-card{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;position:relative;transition:border-color .2s}
+.day-card:hover{border-color:var(--b2)}
+.day-card.today{border-color:var(--gbdr)}
+.day-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.day-name{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);letter-spacing:.06em}
+.day-date{font-size:12px;font-weight:600}
+.day-budget{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--am);font-weight:500}
+.brand-slot{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:var(--rad-sm);margin-bottom:5px;border:1px solid var(--b1)}
+.brand-slot:last-child{margin-bottom:0}
+.slot-name{font-size:12px;font-weight:500;min-width:90px;font-family:'JetBrains Mono',monospace;letter-spacing:.02em}
+.slot-sends{font-size:11px;color:var(--t2)}
+.slot-roas{font-size:11px;font-weight:600;margin-left:auto;font-family:'JetBrains Mono',monospace}
+.no-brands{font-size:11px;color:var(--t3);text-align:center;padding:12px 0}
+
+/* Budget bar */
+.bbar-wrap{height:4px;background:var(--bg4);border-radius:2px;margin-bottom:8px;overflow:hidden}
+.bbar-fill{height:4px;border-radius:2px;background:var(--am);transition:width .4s ease}
+
+/* Summary strip */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 20px;border-bottom:1px solid var(--b1);flex-shrink:0}
+.smet{background:var(--bg2);border-radius:var(--rad-sm);padding:10px 12px}
+.smet-l{font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;margin-bottom:3px;text-transform:uppercase}
+.smet-v{font-size:18px;font-weight:600}
+
+/* Pill nav */
+.pills{display:flex;gap:5px;flex-wrap:wrap;padding:10px 20px;border-bottom:1px solid var(--b1);flex-shrink:0}
+.pill{padding:4px 11px;font-size:11px;border-radius:20px;cursor:pointer;border:1px solid var(--b1);color:var(--t3);font-family:'JetBrains Mono',monospace;transition:all .15s}
+.pill:hover{border-color:var(--b2);color:var(--t2)}
+.pill.on{background:var(--gdim);border-color:var(--gbdr);color:var(--g);font-weight:600}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:9px 14px;border-radius:var(--rad-sm);background:var(--bg4);border:1px solid var(--b2);font-size:12px;color:var(--t1);opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;font-family:'JetBrains Mono',monospace}
+.toast.show{opacity:1}
+
+/* View toggle */
+.view-toggle{display:flex;gap:4px;background:var(--bg3);border-radius:var(--rad-sm);padding:3px}
+.vt-btn{padding:4px 12px;border-radius:5px;font-size:11px;cursor:pointer;border:none;background:transparent;color:var(--t3);font-family:'JetBrains Mono',monospace;transition:all .15s}
+.vt-btn.on{background:var(--bg5);color:var(--t1)}
+
+/* Table view */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:var(--bg2);color:var(--t3);font-weight:500;padding:8px 12px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;border-bottom:1px solid var(--b1)}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--b1);vertical-align:middle}
+.tbl tr:hover td{background:var(--bg2)}
+.tbl tr:last-child td{border-bottom:none}
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar">
+  <div class="hdr">
+    <span class="logo">CRM WEEKLY PLANNER</span>
+    <div class="dot"></div>
+  </div>
+  <div class="tabs">
+    <div class="tab on" onclick="switchTab('plan')">플랜 설정</div>
+    <div class="tab" onclick="switchTab('brands')">브랜드</div>
+    <div class="tab" onclick="switchTab('weight')">배분 조정</div>
+  </div>
+
+  <!-- PLAN TAB -->
+  <div id="tab-plan" class="scr">
+    <div class="field">
+      <label class="lbl">기획전명</label>
+      <input id="camp-name" value="7월 멤버십위크">
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field" style="margin:0">
+        <label class="lbl">시작일</label>
+        <input id="camp-start" type="date" value="2025-07-14">
+      </div>
+      <div class="field" style="margin:0">
+        <label class="lbl">종료일</label>
+        <input id="camp-end" type="date" value="2025-07-20">
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl">기획전 유형</label>
+      <select id="camp-type">
+        <option value="open">오픈형 (초반 집중)</option>
+        <option value="close">마감형 (후반 집중)</option>
+        <option value="both" selected>양쪽 집중형 (오픈+마감)</option>
+        <option value="flat">균등 배분</option>
+      </select>
+    </div>
+
+    <div class="dvd"></div>
+
+    <div class="field">
+      <label class="lbl">주간 총 광고 예산 (원)</label>
+      <input id="total-budget" type="number" value="3000000" step="100000" oninput="updateBudgetPreview()">
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field" style="margin:0">
+        <label class="lbl">발송 단가 (원/건)</label>
+        <input id="unit-cost" type="number" value="20">
+      </div>
+      <div class="field" style="margin:0">
+        <label class="lbl">하루 최대 브랜드 수</label>
+        <input id="max-brands-day" type="number" value="3" min="1" max="8">
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl">피로도 배제 기준 (경과일 미만)</label>
+      <input id="fatigue-cutoff" type="number" value="3">
+    </div>
+
+    <div id="budget-preview" style="background:var(--bg2);border-radius:var(--rad);padding:12px;font-size:12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--t2)">총 예산</span>
+        <span id="prev-total" style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--am)">3,000,000원</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--t2)">일평균 예산</span>
+        <span id="prev-avg" style="font-family:'JetBrains Mono',monospace;color:var(--t2)">428,571원</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--t2)">총 발송 가능 모수</span>
+        <span id="prev-sends" style="font-family:'JetBrains Mono',monospace;color:var(--g)">150,000명</span>
+      </div>
+    </div>
+
+    <div class="dvd"></div>
+
+    <div style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="lbl" style="margin:0">발송 브랜드 리스트</div>
+        <button class="btn-ghost" onclick="document.getElementById('brand-input').value=''">초기화</button>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:5px">브랜드명 한 줄에 하나씩 (영문 소문자)</div>
+      <textarea id="brand-input" rows="10" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9">lulukitchen
+thehonestkitchen
+forcans
+roma
+ziwipeak
+swiffy
+stellachewys
+k9
+otms
+superchew
+thinkpets
+hurray
+andblank</textarea>
+      <div id="match-status" style="font-size:10px;color:var(--t3);margin-top:4px;font-family:'JetBrains Mono',monospace;text-align:right"></div>
+    </div>
+  </div>
+
+  <!-- BRANDS TAB -->
+  <div id="tab-brands" style="display:none" class="scr">
+    <div style="margin-bottom:8px">
+      <input id="db-search" placeholder="브랜드 검색..." oninput="renderDBList()" style="font-size:12px;padding:6px 9px">
+    </div>
+    <div id="db-list"></div>
+  </div>
+
+  <!-- WEIGHT TAB -->
+  <div id="tab-weight" style="display:none" class="scr">
+    <div style="font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.7">
+      요일별 예산 가중치를 조정합니다.<br>
+      <span style="color:var(--t3)">합이 자동으로 100%로 정규화됩니다.</span>
+    </div>
+    <div id="weight-sliders"></div>
+    <div class="dvd"></div>
+    <button class="btn btn-full" onclick="resetWeights()" style="font-size:12px">기본값 초기화</button>
+    <div style="font-size:11px;color:var(--t3)">
+      요일 가중치는 1월~7월 실제 발송 데이터 기반으로 자동 설정됩니다.<br>
+      <span style="color:var(--g)">화요일</span>이 ROAS 2,890% · CTR 18.8%로 가장 효율적이며,
+      <span style="color:var(--re)">금요일</span>이 ROAS 1,073%로 가장 낮습니다.<br>
+      기획전 유형은 요일 효율에 추가로 오픈/마감 가중치를 곱합니다.
+    </div>
+  </div>
+
+  <div class="foot">
+    <button class="btn btn-g btn-full" onclick="runPlanner()" style="font-size:14px;padding:11px">주간 플랜 생성 →</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <div class="summary" id="summary" style="display:none"></div>
+
+  <div style="padding:14px 20px;border-bottom:1px solid var(--b1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between" id="main-hdr">
+    <div>
+      <div id="main-title" style="font-size:16px;font-weight:600;color:var(--t3)">주간 발송 플랜</div>
+      <div id="main-sub" style="font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-top:2px">브랜드 리스트를 입력하고 플랜을 생성하세요</div>
+    </div>
+    <div id="view-toggle" style="display:none">
+      <div class="view-toggle">
+        <div class="vt-btn on" onclick="switchView('cal')">캘린더</div>
+        <div class="vt-btn" onclick="switchView('table')">테이블</div>
+        <div class="vt-btn" onclick="switchView('brand')">브랜드별</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-content" style="flex:1;overflow-y:auto;padding:18px 20px">
+    <div style="text-align:center;padding:80px 0;color:var(--t3)">
+      <div style="font-size:28px;opacity:.2;margin-bottom:12px">◈</div>
+      <div style="font-size:13px;margin-bottom:6px">아직 생성된 플랜이 없습니다</div>
+      <div style="font-size:12px">좌측에서 설정 후 주간 플랜 생성을 눌러주세요</div>
+    </div>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════ BRAND DB ════════════════════════ */
+let DB = {
+  "aatu":{ctr:23.2,cvr:7.7,roas:6309,rev:919830,sends:729,purchases:13},
+  "almonature":{ctr:19.83,cvr:5.93,roas:3182,rev:1175873,sends:2039,purchases:20},
+  "alwayshungryclub":{ctr:22.5,cvr:3.6,roas:2604,rev:708933,sends:1361,purchases:11},
+  "americansolution":{ctr:15.73,cvr:6.0,roas:2251,rev:443035,sends:1635,purchases:10},
+  "andblank":{ctr:13.99,cvr:2.3,roas:872,rev:1658604,sends:11197,purchases:31},
+  "answerspetfood":{ctr:14.83,cvr:5.02,roas:4320,rev:1060593,sends:2790,purchases:11},
+  "apalebluedot":{ctr:12.45,cvr:5.05,roas:2005,rev:1323830,sends:4515,purchases:18},
+  "arlokitchen":{ctr:10.2,cvr:4.26,roas:1150,rev:690815,sends:3491,purchases:12},
+  "awesomepuppy":{ctr:18.95,cvr:2.1,roas:1623,rev:622501,sends:1647,purchases:9},
+  "baandddang":{ctr:33.1,cvr:3.2,roas:2751,rev:1594678,sends:2898,purchases:31},
+  "barfdog":{ctr:6.67,cvr:2.53,roas:888,rev:1235903,sends:5308,purchases:19},
+  "bennys":{ctr:16.42,cvr:2.84,roas:1140,rev:1529171,sends:6115,purchases:36},
+  "bogadent":{ctr:11.7,cvr:3.7,roas:1462,rev:870588,sends:2978,purchases:13},
+  "boondog":{ctr:12.65,cvr:2.34,roas:884,rev:1402440,sends:9887,purchases:26},
+  "bridgedog":{ctr:19.23,cvr:3.73,roas:1756,rev:5761323,sends:19120,purchases:136},
+  "brightkins":{ctr:7.31,cvr:2.03,roas:315,rev:388332,sends:7031,purchases:9},
+  "buddyboo":{ctr:9.85,cvr:2.55,roas:541,rev:474430,sends:4586,purchases:12},
+  "catsrang":{ctr:7.5,cvr:3.0,roas:596,rev:996906,sends:8367,purchases:19},
+  "cattem":{ctr:4.6,cvr:6.5,roas:499,rev:266920,sends:2675,purchases:8},
+  "chiot":{ctr:8.73,cvr:1.63,roas:372,rev:630181,sends:6972,purchases:14},
+  "coteacote":{ctr:15.34,cvr:2.84,roas:1020,rev:1443897,sends:8214,purchases:29},
+  "dhuman":{ctr:5.67,cvr:4.86,roas:565,rev:577338,sends:5718,purchases:13},
+  "diggo":{ctr:3.33,cvr:7.5,roas:456,rev:325083,sends:4864,purchases:7},
+  "duit":{ctr:12.43,cvr:3.35,roas:1129,rev:968561,sends:5429,purchases:21},
+  "durangrurang":{ctr:14.37,cvr:2.33,roas:806,rev:608436,sends:3383,purchases:12},
+  "fitpet":{ctr:5.5,cvr:2.1,roas:227,rev:142722,sends:3177,purchases:3},
+  "flot":{ctr:13.98,cvr:1.68,roas:483,rev:638363,sends:6940,purchases:18},
+  "forcans":{ctr:18.8,cvr:8.55,roas:4233,rev:1847032,sends:2404,purchases:37},
+  "freschi":{ctr:14.6,cvr:7.3,roas:2605,rev:2234346,sends:5505,purchases:46},
+  "frontier":{ctr:21.58,cvr:5.6,roas:3334,rev:1526673,sends:2404,purchases:24},
+  "goldrony":{ctr:12.7,cvr:4.32,roas:1085,rev:563485,sends:4210,purchases:12},
+  "gowithtail":{ctr:14.0,cvr:5.8,roas:2458,rev:1917141,sends:4074,purchases:32},
+  "guruguru":{ctr:9.68,cvr:2.05,roas:735,rev:840337,sends:6186,purchases:11},
+  "gwt":{ctr:16.9,cvr:12.6,roas:5399,rev:3554514,sends:3292,purchases:70},
+  "hccompany":{ctr:10.2,cvr:5.8,roas:1211,rev:571450,sends:2359,purchases:14},
+  "highdog":{ctr:10.85,cvr:5.0,roas:1089,rev:232920,sends:1073,purchases:6},
+  "honestmeal":{ctr:5.5,cvr:4.82,roas:841,rev:840344,sends:5556,purchases:15},
+  "hurray":{ctr:7.92,cvr:5.59,roas:1073,rev:785593,sends:5604,purchases:17},
+  "itsdog":{ctr:14.65,cvr:2.33,roas:986,rev:984318,sends:6418,purchases:18},
+  "junglemonster":{ctr:6.34,cvr:4.81,roas:465,rev:349480,sends:4044,purchases:13},
+  "k9":{ctr:18.94,cvr:3.78,roas:2952,rev:1496453,sends:3117,purchases:18},
+  "kinikini":{ctr:12.93,cvr:1.35,roas:504,rev:473673,sends:4303,purchases:11},
+  "laughingcharlie":{ctr:8.87,cvr:3.7,roas:686,rev:406963,sends:3765,purchases:10},
+  "lorenz":{ctr:13.45,cvr:4.25,roas:1396,rev:2544484,sends:9509,purchases:50},
+  "lulukitchen":{ctr:10.37,cvr:5.39,roas:2841,rev:3328517,sends:7928,purchases:37},
+  "meatybone":{ctr:12.5,cvr:3.1,roas:912,rev:523110,sends:2869,purchases:11},
+  "modernhouse":{ctr:12.61,cvr:3.23,roas:880,rev:632763,sends:6419,purchases:16},
+  "montie":{ctr:13.17,cvr:1.6,roas:643,rev:705325,sends:7917,purchases:14},
+  "munikund":{ctr:13.5,cvr:2.9,roas:1312,rev:1373641,sends:4508,purchases:26},
+  "oneuru":{ctr:16.83,cvr:15.77,roas:3133,rev:1276990,sends:2005,purchases:80},
+  "oraeorae":{ctr:7.8,cvr:6.95,roas:1238,rev:2465011,sends:13022,purchases:54},
+  "oraeoraeproject":{ctr:6.0,cvr:5.1,roas:815,rev:883476,sends:6451,purchases:16},
+  "otms":{ctr:12.7,cvr:4.83,roas:2214,rev:2830682,sends:8866,purchases:35},
+  "pawavel":{ctr:11.0,cvr:2.72,roas:949,rev:693692,sends:5303,purchases:16},
+  "petbeo":{ctr:18.35,cvr:2.55,roas:700,rev:578686,sends:6386,purchases:19},
+  "petesthe":{ctr:16.03,cvr:2.85,roas:1491,rev:569813,sends:1807,purchases:10},
+  "plushpuppy":{ctr:11.9,cvr:3.42,roas:1210,rev:1995100,sends:8835,purchases:35},
+  "popone":{ctr:8.63,cvr:3.83,roas:1145,rev:1361565,sends:7008,purchases:21},
+  "primal":{ctr:40.3,cvr:7.6,roas:9706,rev:823100,sends:424,purchases:13},
+  "procumin":{ctr:15.3,cvr:4.3,roas:2236,rev:1139382,sends:2548,purchases:17},
+  "proden":{ctr:18.5,cvr:6.47,roas:2945,rev:800829,sends:1260,purchases:18},
+  "puppygallery":{ctr:13.75,cvr:2.4,roas:916,rev:1504828,sends:10472,purchases:32},
+  "richzbox":{ctr:18.8,cvr:6.4,roas:3458,rev:1613006,sends:2332,purchases:28},
+  "ritogato":{ctr:11.56,cvr:3.1,roas:978,rev:575008,sends:3114,purchases:10},
+  "roma":{ctr:17.88,cvr:10.07,roas:4927,rev:2132121,sends:4373,purchases:42},
+  "sandrevolution":{ctr:13.55,cvr:11.85,roas:3061,rev:1010642,sends:1284,purchases:22},
+  "seoru":{ctr:13.98,cvr:2.6,roas:1254,rev:1056445,sends:4878,purchases:14},
+  "stellachewys":{ctr:20.98,cvr:6.13,roas:5186,rev:4646945,sends:7186,purchases:69},
+  "stevesrealfood":{ctr:27.6,cvr:5.1,roas:4868,rev:2083710,sends:2140,purchases:30},
+  "stroll":{ctr:16.8,cvr:2.38,roas:1314,rev:2347662,sends:8724,purchases:35},
+  "strssbuster":{ctr:11.45,cvr:4.97,roas:1744,rev:681644,sends:1773,purchases:9},
+  "superchew":{ctr:9.21,cvr:6.23,roas:1365,rev:1813747,sends:9364,purchases:39},
+  "superpaw":{ctr:9.5,cvr:4.13,roas:1025,rev:394040,sends:2928,purchases:9},
+  "susupetfood":{ctr:13.97,cvr:3.53,roas:1401,rev:827017,sends:2849,purchases:17},
+  "swiffy":{ctr:13.98,cvr:4.8,roas:1756,rev:1252386,sends:4293,purchases:25},
+  "tasteofnature":{ctr:26.8,cvr:8.2,roas:10096,rev:1286173,sends:637,purchases:14},
+  "thehonestkitchen":{ctr:14.97,cvr:6.04,roas:3283,rev:3815296,sends:10714,purchases:65},
+  "thinklikepet":{ctr:8.53,cvr:5.49,roas:1715,rev:1573008,sends:5277,purchases:20},
+  "thinkpets":{ctr:6.03,cvr:6.17,roas:744,rev:833175,sends:5699,purchases:20},
+  "tiolio":{ctr:13.05,cvr:4.05,roas:1103,rev:1722639,sends:7284,purchases:41},
+  "trustyfood":{ctr:6.45,cvr:3.3,roas:626,rev:757364,sends:5798,purchases:16},
+  "uglugl":{ctr:13.25,cvr:5.05,roas:2811,rev:885908,sends:3100,purchases:14},
+  "vetactiv8":{ctr:18.2,cvr:6.2,roas:5114,rev:1821379,sends:2349,purchases:26},
+  "vetple":{ctr:9.38,cvr:3.13,roas:661,rev:334985,sends:2624,purchases:8},
+  "virbac":{ctr:12.1,cvr:3.5,roas:820,rev:466643,sends:2846,purchases:12},
+  "weruba":{ctr:18.8,cvr:5.0,roas:2652,rev:850189,sends:1603,purchases:15},
+  "weruva":{ctr:8.1,cvr:6.3,roas:1079,rev:421774,sends:1954,purchases:10},
+  "ziwipeak":{ctr:23.98,cvr:3.76,roas:2808,rev:1917316,sends:3447,purchases:30},
+};
+
+const PAVG={ctr:11.51,cvr:3.76,roas:1267};
+const DAYS_KO=['월','화','수','목','금','토','일'];
+/* 실제 DB 기반 요일별 효율 가중치 (월~일, ROAS×CTR×CVR 복합 지수)
+   월:0.91 화:1.35 수:0.93 목:1.07 금:0.69 토:0.94 일:1.11
+   원본: 월ROAS1521 화2890 수1600 목1946 금1073 토1657 일1918 */
+const DB_DOW_W = [0.91, 1.35, 0.93, 1.07, 0.69, 0.94, 1.11]; // 0=월…6=일
+
+/* 기획전 유형은 DB 요일 가중치를 베이스로 증폭/감쇠 */
+function getTypeMultiplier(type, totalDays) {
+  /* 날짜 인덱스(0~totalDays-1)를 0~1 진행률로 환산해 멀티플라이어 반환 */
+  return Array.from({length: totalDays}, (_, i) => {
+    const progress = totalDays > 1 ? i / (totalDays - 1) : 0.5;
+    if (type === 'open')  return 1.0 + (1.0 - progress) * 0.8;   // 초반 최대 1.8
+    if (type === 'close') return 1.0 + progress * 0.8;             // 후반 최대 1.8
+    if (type === 'both')  return 1.0 + Math.sin(progress * Math.PI) * (-0.4) + 0.4 + Math.pow(2*progress-1,2)*0.7; // U자형
+    return 1.0; // flat
+  });
+}
+
+const TYPE_WEIGHTS={
+  open:   [1.8,1.5,1.0,0.8,0.9,1.1,0.9],
+  close:  [0.9,0.9,0.9,1.0,1.4,1.7,1.2],
+  both:   [1.6,1.3,0.8,0.8,1.1,1.6,1.0],
+  flat:   [1.0,1.0,1.0,1.0,1.0,1.0,1.0],
+};
+
+let customWeights = null;
+let currentView = 'cal';
+let planData = null;
+
+/* ── init weight sliders ── */
+function initWeightSliders(type) {
+  const base = TYPE_WEIGHTS[type || 'both'];
+  customWeights = [...base];
+  renderWeightSliders();
+}
+
+function renderWeightSliders() {
+  const start = document.getElementById('camp-start').value;
+  const startDate = start ? new Date(start) : new Date();
+  const container = document.getElementById('weight-sliders');
+  if (!customWeights) customWeights = [1,1,1,1,1,1,1];
+  const total = customWeights.reduce((a,b)=>a+b,0);
+  const budget = parseInt(document.getElementById('total-budget').value)||0;
+  // DB 요일 효율 레이블
+  const DOW_ROAS = [1521,2890,1600,1946,1073,1657,1918];
+  const DOW_TIER = ['보통','최우수','보통','우수','주의','보통','우수'];
+  const DOW_COL  = ['var(--t2)','var(--g)','var(--t2)','var(--bl)','var(--re)','var(--t2)','var(--bl)'];
+  container.innerHTML = customWeights.map((w, i) => {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const dow = d.getDay()===0?6:d.getDay()-1;
+    const dayName = DAYS_KO[dow];
+    const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+    const pct = total > 0 ? (w/total*100).toFixed(0) : 0;
+    const dayBudget = total > 0 ? Math.round(budget * w / total) : 0;
+    const sends = dayBudget > 0 ? Math.round(dayBudget / (parseInt(document.getElementById('unit-cost').value)||20)) : 0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="slider-lbl">${dayName}</span>
+          <span style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace">${dateStr}</span>
+          <span style="font-size:9px;color:${DOW_COL[dow]};font-family:'JetBrains Mono',monospace;font-weight:600">${DOW_TIER[dow]}</span>
+          <span style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace">DB ROAS ${DOW_ROAS[dow].toLocaleString()}%</span>
+        </div>
+        <span class="slider-val">${pct}%</span>
+      </div>
+      <div class="slider-row" style="margin-bottom:3px">
+        <input type="range" min="0.1" max="4" step="0.1" value="${w.toFixed(1)}"
+          oninput="customWeights[${i}]=parseFloat(this.value);renderWeightSliders()"
+          style="flex:1">
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace">
+        <span>${dayBudget.toLocaleString()}원</span>
+        <span>${sends.toLocaleString()}명</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function resetWeights() {
+  const start = document.getElementById('camp-start').value;
+  const end   = document.getElementById('camp-end').value;
+  const type  = document.getElementById('camp-type').value;
+  if (!start) { customWeights = [1,1,1,1,1,1,1]; renderWeightSliders(); return; }
+  const startDate = new Date(start);
+  const endDate   = end ? new Date(end) : new Date(start);
+  const totalDays = Math.max(1, Math.round((endDate-startDate)/86400000)+1);
+  const typeMult  = getTypeMultiplier(type, totalDays);
+  const dates = Array.from({length:totalDays},(_,i)=>{ const d=new Date(startDate); d.setDate(startDate.getDate()+i); return d; });
+  customWeights = dates.map((d,i)=>{
+    const dow = d.getDay()===0?6:d.getDay()-1;
+    return +(DB_DOW_W[dow]*typeMult[i]).toFixed(3);
+  });
+  renderWeightSliders();
+}
+
+document.getElementById('camp-type').addEventListener('change', () => {
+  customWeights = null; // 유형 바뀌면 DB 가중치로 재계산
+  resetWeights();
+  updateBudgetPreview();
+});
+
+document.getElementById('camp-start').addEventListener('change', () => {
+  customWeights = null;
+  resetWeights();
+  updateBudgetPreview();
+});
+
+document.getElementById('camp-end').addEventListener('change', () => {
+  customWeights = null;
+  resetWeights();
+  updateBudgetPreview();
+});
+
+/* ── budget preview ── */
+function updateBudgetPreview() {
+  const budget = parseInt(document.getElementById('total-budget').value)||0;
+  const uc = parseInt(document.getElementById('unit-cost').value)||20;
+  const start = document.getElementById('camp-start').value;
+  const end = document.getElementById('camp-end').value;
+  const days = start && end ? Math.max(1, Math.round((new Date(end)-new Date(start))/86400000)+1) : 7;
+  document.getElementById('prev-total').textContent = budget.toLocaleString()+'원';
+  document.getElementById('prev-avg').textContent = Math.round(budget/days).toLocaleString()+'원';
+  document.getElementById('prev-sends').textContent = Math.round(budget/uc).toLocaleString()+'명';
+  if (customWeights) renderWeightSliders();
+}
+
+/* ── score calc ── */
+function getPerfType(ctr,cvr){
+  if(ctr>=12&&cvr>=5)return{key:'excellent',label:'성과우수',cls:'b-ex'};
+  if(ctr>=12&&cvr<5) return{key:'ctr',label:'유입우수',cls:'b-ct'};
+  if(ctr<12&&cvr>=5) return{key:'cvr',label:'전환우수',cls:'b-cv'};
+  if(ctr>=6&&cvr<5)  return{key:'notbad',label:'낫배드',cls:'b-nb'};
+  return{key:'low',label:'성과저조',cls:'b-lw'};
+}
+
+function calcBrandScore(d){
+  const pt=getPerfType(d.ctr,d.cvr);
+  const base={excellent:60,ctr:48,cvr:48,notbad:35,low:20}[pt.key];
+  const ctrBonus=Math.min(15,Math.max(-10,((d.ctr-PAVG.ctr)/PAVG.ctr)*15));
+  const cvrBonus=Math.min(10,Math.max(-5,((d.cvr-PAVG.cvr)/PAVG.cvr)*10));
+  return{score:base+ctrBonus+cvrBonus,pt};
+}
+
+/* ── main planner ── */
+function runPlanner() {
+  const startStr = document.getElementById('camp-start').value;
+  const endStr   = document.getElementById('camp-end').value;
+  if (!startStr || !endStr) { toast('날짜를 입력해주세요'); return; }
+
+  const startDate = new Date(startStr);
+  const endDate   = new Date(endStr);
+  if (endDate < startDate) { toast('종료일이 시작일보다 앞입니다'); return; }
+
+  const totalBudget = parseInt(document.getElementById('total-budget').value)||0;
+  const unitCost    = parseInt(document.getElementById('unit-cost').value)||20;
+  const maxPerDay   = parseInt(document.getElementById('max-brands-day').value)||3;
+  const fatigueCut  = parseInt(document.getElementById('fatigue-cutoff').value)||3;
+  const campName    = document.getElementById('camp-name').value||'기획전';
+
+  const totalDays = Math.round((endDate-startDate)/86400000)+1;
+
+  // 날짜 배열
+  const dates = [];
+  for (let i=0;i<totalDays;i++){
+    const d=new Date(startDate); d.setDate(startDate.getDate()+i); dates.push(d);
+  }
+
+  // 가중치: DB 요일 효율 x 기획전 유형 멀티플라이어
+  const type = document.getElementById('camp-type').value;
+  if (!customWeights || customWeights.length !== totalDays) {
+    const typeMult = getTypeMultiplier(type, totalDays);
+    customWeights = dates.map((d,i) => {
+      const dow = d.getDay()===0?6:d.getDay()-1;
+      return +(DB_DOW_W[dow] * typeMult[i]).toFixed(3);
+    });
+  }
+  const wSlice = customWeights.slice(0,totalDays);
+  const wTotal = wSlice.reduce((a,b)=>a+b,0);
+
+  // 일별 예산
+  const dayBudgets = wSlice.map(w => Math.round(totalBudget * w / wTotal));
+
+  // 브랜드 파싱 + 점수 산출
+  const raw = document.getElementById('brand-input').value.trim();
+  const names = [...new Set(raw.split('\n').map(s=>s.trim().toLowerCase()).filter(Boolean))];
+  const scored = names.map(name => {
+    const d = DB[name];
+    if (!d) return { name, matched:false, score:-999, pt:null, d:null };
+    const {score,pt} = calcBrandScore(d);
+    return { name, matched:true, score, pt, d };
+  }).filter(b=>b.matched && b.score > -999);
+  scored.sort((a,b)=>b.score-a.score);
+
+  const unmatched = names.filter(n=>!DB[n]);
+  document.getElementById('match-status').textContent =
+    `${scored.length}개 매칭 / ${unmatched.length > 0 ? unmatched.length+'개 미등록' : '전체 매칭'}`;
+
+  // 브랜드를 날짜에 배분 — 점수 순으로 순환 배치
+  // 같은 브랜드는 7일 이내 재발송 안 함 (피로도)
+  const dayPlans = dates.map((d,i) => ({
+    date: d,
+    budget: dayBudgets[i],
+    brands: [],
+    totalSends: 0,
+    estRev: 0,
+    estRoas: 0,
+  }));
+
+  // 브랜드 배분 알고리즘: 예산 규모 비례 + 성과 순위 기반
+  const usedOn = {}; // brand -> last used day index
+  scored.forEach(b => usedOn[b.name] = -99);
+
+  for (let di=0; di<totalDays; di++) {
+    const dayBudget = dayBudgets[di];
+    if (dayBudget <= 0) continue;
+    const available = scored.filter(b => (di - (usedOn[b.name]||(-99))) >= fatigueCut);
+    if (!available.length) continue;
+
+    // 하루 예산을 최대 브랜드 수로 나눠 각 브랜드 예산 배정
+    const take = Math.min(maxPerDay, available.length);
+    const perBrand = Math.round(dayBudget / take);
+
+    let usedBudget = 0;
+    for (let bi=0; bi<take; bi++) {
+      const brand = available[bi];
+      const budget = bi === take-1 ? dayBudget - usedBudget : perBrand;
+      const sends = Math.round(budget / unitCost);
+      const aov = brand.d.purchases > 0 ? brand.d.rev / brand.d.purchases : 0;
+      const estRev = sends * (brand.d.cvr/100) * aov;
+      const estRoas = budget > 0 ? (estRev / budget) * 100 : 0;
+      dayPlans[di].brands.push({ ...brand, budget, sends, estRev, estRoas });
+      dayPlans[di].totalSends += sends;
+      dayPlans[di].estRev += estRev;
+      usedBudget += budget;
+      usedOn[brand.name] = di;
+    }
+    dayPlans[di].estRoas = dayPlans[di].budget > 0
+      ? (dayPlans[di].estRev / dayPlans[di].budget) * 100 : 0;
+  }
+
+  planData = { campName, startStr, endStr, totalBudget, unitCost, dayPlans, unmatched };
+
+  // 요약 업데이트
+  const totalSends = dayPlans.reduce((a,d)=>a+d.totalSends,0);
+  const totalRev = dayPlans.reduce((a,d)=>a+d.estRev,0);
+  const totalRoas = totalBudget > 0 ? (totalRev/totalBudget)*100 : 0;
+  const activedays = dayPlans.filter(d=>d.brands.length>0).length;
+
+  document.getElementById('summary').style.display='grid';
+  document.getElementById('summary').innerHTML=`
+    <div class="smet"><div class="smet-l">총 예산</div><div class="smet-v" style="color:var(--am)">${(totalBudget/10000).toFixed(0)}만원</div></div>
+    <div class="smet"><div class="smet-l">총 발송 모수</div><div class="smet-v" style="color:var(--g)">${totalSends.toLocaleString()}</div></div>
+    <div class="smet"><div class="smet-l">예상 매출</div><div class="smet-v">${(totalRev/1000000).toFixed(1)}M</div></div>
+    <div class="smet"><div class="smet-l">예상 ROAS</div><div class="smet-v" style="color:${totalRoas>1267?'var(--g)':'var(--am)'}">${totalRoas.toFixed(0)}%</div></div>
+  `;
+
+  document.getElementById('main-title').textContent = campName;
+  document.getElementById('main-title').style.color = '';
+  document.getElementById('main-sub').textContent =
+    `${startStr} ~ ${endStr} · ${totalDays}일간 · ${activedays}일 발송 · ${scored.length}개 브랜드`;
+  document.getElementById('view-toggle').style.display='block';
+
+  currentView = 'cal';
+  document.querySelectorAll('.vt-btn').forEach((b,i)=>b.classList.toggle('on',i===0));
+  renderCalView();
+  toast('플랜 생성 완료');
+}
+
+/* ── Calendar view ── */
+function renderCalView() {
+  const {dayPlans} = planData;
+  const cols = Math.min(dayPlans.length, 7);
+  const content = document.getElementById('main-content');
+  content.innerHTML = `<div class="cal" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${
+    dayPlans.map((dp,i) => {
+      const d = dp.date;
+      const dow = d.getDay()===0?6:d.getDay()-1;
+      const isWknd = dow>=5;
+      const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+      const maxBudget = Math.max(...dayPlans.map(x=>x.budget));
+      const barPct = maxBudget>0 ? (dp.budget/maxBudget*100).toFixed(0) : 0;
+      const isEmpty = dp.brands.length===0;
+      const DOW_TIER=['보통','최우수','보통','우수','주의','보통','우수'];
+      const DOW_COL=['var(--t3)','var(--g)','var(--t3)','var(--bl)','var(--re)','var(--t3)','var(--bl)'];
+      const DOW_ROAS_DB=[1521,2890,1600,1946,1073,1657,1918];
+      return `<div class="day-card" style="${isWknd?'border-color:var(--pubdr);':''}${dow===1?'border-color:var(--gbdr);':''}">
+        <div class="day-header">
+          <div>
+            <div class="day-name" style="${isWknd?'color:var(--pu)':dow===1?'color:var(--g)':''}">${DAYS_KO[dow]}</div>
+            <div class="day-date">${dateStr}</div>
+          </div>
+          <div>
+            <div class="day-budget">${(dp.budget/10000).toFixed(1)}만</div>
+            <div style="font-size:9px;color:${DOW_COL[dow]};font-family:'JetBrains Mono',monospace;text-align:right;margin-top:2px">${DOW_TIER[dow]}</div>
+          </div>
+        </div>
+        <div class="bbar-wrap"><div class="bbar-fill" style="width:${barPct}%"></div></div>
+        ${isEmpty ? `<div class="no-brands">발송 없음</div>` :
+          dp.brands.map(b => {
+            const roasColor = b.estRoas > PAVG.roas ? 'var(--g)' : b.estRoas > 800 ? 'var(--am)' : 'var(--re)';
+            return `<div class="brand-slot">
+              <div>
+                <div class="slot-name">${b.name}</div>
+                <div class="slot-sends">${b.sends.toLocaleString()}명 · <span class="bdg ${b.pt.cls}" style="font-size:9px;padding:1px 5px">${b.pt.label}</span></div>
+              </div>
+              <div class="slot-roas" style="color:${roasColor}">${b.estRoas.toFixed(0)}%</div>
+            </div>`;
+          }).join('')
+        }
+        ${!isEmpty ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1);display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace">
+          <span style="color:var(--t3)">${dp.brands.length}개 브랜드</span>
+          <span style="color:var(--t2)">${dp.totalSends.toLocaleString()}명</span>
+        </div>` : ''}
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+/* ── Table view ── */
+function renderTableView() {
+  const {dayPlans} = planData;
+  const rows = [];
+  dayPlans.forEach(dp => {
+    dp.brands.forEach(b => {
+      const d = dp.date;
+      const dow = d.getDay()===0?6:d.getDay()-1;
+      rows.push({
+        date:`${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[dow]})`,
+        name: b.name,
+        pt: b.pt,
+        budget: b.budget,
+        sends: b.sends,
+        ctr: b.d.ctr,
+        cvr: b.d.cvr,
+        estRev: b.estRev,
+        estRoas: b.estRoas,
+      });
+    });
+  });
+
+  document.getElementById('main-content').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th>발송일</th><th>브랜드</th><th>유형</th>
+        <th style="text-align:right">예산</th><th style="text-align:right">모수</th>
+        <th style="text-align:right">평균 CTR</th><th style="text-align:right">평균 CVR</th>
+        <th style="text-align:right">예상 매출</th><th style="text-align:right">예상 ROAS</th>
+      </tr></thead>
+      <tbody>${rows.map(r=>`
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2)">${r.date}</td>
+          <td style="font-weight:500;font-family:'JetBrains Mono',monospace">${r.name}</td>
+          <td><span class="bdg ${r.pt.cls}">${r.pt.label}</span></td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace">${r.budget.toLocaleString()}</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--g)">${r.sends.toLocaleString()}</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.ctr>=PAVG.ctr?'var(--g)':'var(--t2)'}">${r.ctr.toFixed(1)}%</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.cvr>=PAVG.cvr?'var(--g)':'var(--t2)'}">${r.cvr.toFixed(1)}%</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace">${(r.estRev/1000).toFixed(0)}K</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.estRoas>PAVG.roas?'var(--g)':r.estRoas>800?'var(--am)':'var(--re)'}">${r.estRoas.toFixed(0)}%</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+/* ── Brand view ── */
+function renderBrandView() {
+  const {dayPlans} = planData;
+  const brandMap = {};
+  dayPlans.forEach(dp => {
+    dp.brands.forEach(b => {
+      if (!brandMap[b.name]) brandMap[b.name] = { ...b, days:[], totalSends:0, totalBudget:0, totalRev:0 };
+      const d = dp.date;
+      const dow = d.getDay()===0?6:d.getDay()-1;
+      brandMap[b.name].days.push(`${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[dow]})`);
+      brandMap[b.name].totalSends += b.sends;
+      brandMap[b.name].totalBudget += b.budget;
+      brandMap[b.name].totalRev += b.estRev;
+    });
+  });
+
+  const brands = Object.values(brandMap).sort((a,b)=>b.score-a.score);
+  document.getElementById('main-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+    ${brands.map(b=>{
+      const overallRoas = b.totalBudget>0?(b.totalRev/b.totalBudget)*100:0;
+      const roasColor=overallRoas>PAVG.roas?'var(--g)':overallRoas>800?'var(--am)':'var(--re)';
+      return `<div style="background:var(--bg2);border:1px solid var(--b1);border-radius:var(--rad);padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:14px;font-weight:600;font-family:'JetBrains Mono',monospace">${b.name}</span>
+          <span class="bdg ${b.pt.cls}">${b.pt.label}</span>
+        </div>
+        <div class="g3" style="margin-bottom:10px">
+          <div style="background:var(--bg3);border-radius:var(--rad-sm);padding:7px 8px">
+            <div style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:2px">총 모수</div>
+            <div style="font-size:14px;font-weight:600;color:var(--g)">${b.totalSends.toLocaleString()}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--rad-sm);padding:7px 8px">
+            <div style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:2px">총 예산</div>
+            <div style="font-size:14px;font-weight:600;color:var(--am)">${(b.totalBudget/10000).toFixed(1)}만</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--rad-sm);padding:7px 8px">
+            <div style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:2px">예상 ROAS</div>
+            <div style="font-size:14px;font-weight:600;color:${roasColor}">${overallRoas.toFixed(0)}%</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-family:'JetBrains Mono',monospace">발송 일정</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${b.days.map(day=>`<span style="font-size:10px;font-family:'JetBrains Mono',monospace;background:var(--bg3);border:1px solid var(--b2);border-radius:4px;padding:2px 6px;color:var(--t2)">${day}</span>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+    </div>`;
+}
+
+/* ── View switch ── */
+function switchView(v) {
+  currentView = v;
+  document.querySelectorAll('.vt-btn').forEach((b,i)=>b.classList.toggle('on',['cal','table','brand'][i]===v));
+  if (!planData) return;
+  if (v==='cal') renderCalView();
+  else if (v==='table') renderTableView();
+  else renderBrandView();
+}
+
+/* ── Tab switch ── */
+function switchTab(id) {
+  ['plan','brands','weight'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===id?'flex':'none';
+    document.getElementById('tab-'+t).style.flexDirection=t===id?'column':'';
+  });
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('on',['plan','brands','weight'][i]===id);
+  });
+  if (id==='brands') renderDBList();
+  if (id==='weight') { if(!customWeights) resetWeights(); renderWeightSliders(); }
+}
+
+/* ── DB list ── */
+function renderDBList() {
+  const q=(document.getElementById('db-search').value||'').toLowerCase();
+  const el=document.getElementById('db-list');
+  const keys=Object.keys(DB).filter(k=>!q||k.includes(q)).sort();
+  el.innerHTML=keys.map(k=>{
+    const d=DB[k];const pt=getPerfType(d.ctr,d.cvr);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--b1);border-radius:var(--rad-sm);margin-bottom:4px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:500;font-family:'JetBrains Mono',monospace">${k}</span>
+          <span class="bdg ${pt.cls}" style="font-size:9px;padding:1px 5px">${pt.label}</span>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px;font-family:'JetBrains Mono',monospace">CTR ${d.ctr}% · CVR ${d.cvr}% · ROAS ${d.roas.toLocaleString()}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Helpers ── */
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// Tab display fix
+['plan','brands','weight'].forEach(t=>{
+  const el=document.getElementById('tab-'+t);
+  if(t==='plan'){el.style.display='flex';el.style.flexDirection='column';}
+  else el.style.display='none';
+});
+
+// Init
+resetWeights();
+updateBudgetPreview();
+renderDBList();
+</script>
+</body>
+</html>
