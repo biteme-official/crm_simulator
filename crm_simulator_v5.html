@@ -56,6 +56,8 @@ select option{background:var(--bg3)}
 .btn:hover{border-color:var(--b3);background:var(--bg4)}
 .btn-g{background:var(--gdim);border-color:var(--gbdr);color:var(--g)}
 .btn-g:hover{background:rgba(32,208,122,.2)}
+.btn-bl{background:var(--bldim);border-color:var(--blbdr);color:var(--bl)}
+.btn-bl:hover{background:rgba(79,156,248,.2)}
 .btn-full{width:100%;text-align:center}
 .btn-sm{padding:3px 8px;font-size:10px;border-radius:20px;font-family:'JetBrains Mono',monospace}
 .btn-ghost{background:transparent;border:none;color:var(--t3);padding:2px 5px;font-size:11px;cursor:pointer}
@@ -85,7 +87,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 input[type=range]:focus{outline:none}
 
 /* Weekly calendar */
-.cal{display:grid;gap:8px;margin-bottom:0}
+.cal{display:grid;gap:8px;margin-bottom:12px}
 .day-card{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;position:relative;transition:border-color .2s}
 .day-card:hover{border-color:var(--b2)}
 .day-card.today{border-color:var(--gbdr)}
@@ -131,6 +133,10 @@ input[type=range]:focus{outline:none}
 .tbl td{padding:8px 12px;border-bottom:1px solid var(--b1);vertical-align:middle}
 .tbl tr:hover td{background:var(--bg2)}
 .tbl tr:last-child td{border-bottom:none}
+
+/* Discount inputs */
+.discount-row{display:grid;grid-template-columns:1fr 72px;align-items:center;gap:6px;margin-bottom:5px}
+.discount-row input[type=number]{padding:5px 8px;text-align:right}
 </style>
 </head>
 <body>
@@ -215,10 +221,10 @@ input[type=range]:focus{outline:none}
     <div style="margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <div class="lbl" style="margin:0">발송 브랜드 리스트</div>
-        <button class="btn-ghost" onclick="document.getElementById('brand-input').value=''">초기화</button>
+        <button class="btn-ghost" onclick="document.getElementById('brand-input').value='';renderDiscountInputs()">초기화</button>
       </div>
       <div style="font-size:11px;color:var(--t3);margin-bottom:5px">브랜드명 한 줄에 하나씩 (영문 소문자)</div>
-      <textarea id="brand-input" rows="10" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9">lulukitchen
+      <textarea id="brand-input" rows="8" oninput="renderDiscountInputs()" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9">lulukitchen
 thehonestkitchen
 forcans
 roma
@@ -232,6 +238,17 @@ thinkpets
 hurray
 andblank</textarea>
       <div id="match-status" style="font-size:10px;color:var(--t3);margin-top:4px;font-family:'JetBrains Mono',monospace;text-align:right"></div>
+      <div id="unmatched-list" style="margin-top:6px"></div>
+    </div>
+
+    <div id="discount-section" style="display:none;margin-bottom:10px">
+      <div class="dvd"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="lbl" style="margin:0">브랜드별 할인율</div>
+        <button class="btn-ghost" onclick="resetDiscounts()">전체 초기화</button>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:8px">기획전 할인율 입력 시 ROAS 예측에 반영됩니다</div>
+      <div id="discount-inputs"></div>
     </div>
   </div>
 
@@ -252,7 +269,7 @@ andblank</textarea>
     <div id="weight-sliders"></div>
     <div class="dvd"></div>
     <button class="btn btn-full" onclick="resetWeights()" style="font-size:12px">기본값 초기화</button>
-    <div style="font-size:11px;color:var(--t3)">
+    <div style="font-size:11px;color:var(--t3);margin-top:10px">
       요일 가중치는 1월~7월 실제 발송 데이터 기반으로 자동 설정됩니다.<br>
       <span style="color:var(--g)">화요일</span>이 ROAS 2,890% · CTR 18.8%로 가장 효율적이며,
       <span style="color:var(--re)">금요일</span>이 ROAS 1,073%로 가장 낮습니다.<br>
@@ -274,11 +291,14 @@ andblank</textarea>
       <div id="main-title" style="font-size:16px;font-weight:600;color:var(--t3)">주간 발송 플랜</div>
       <div id="main-sub" style="font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-top:2px">브랜드 리스트를 입력하고 플랜을 생성하세요</div>
     </div>
-    <div id="view-toggle" style="display:none">
-      <div class="view-toggle">
-        <div class="vt-btn on" onclick="switchView('cal')">캘린더</div>
-        <div class="vt-btn" onclick="switchView('table')">테이블</div>
-        <div class="vt-btn" onclick="switchView('brand')">브랜드별</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="csv-btn" onclick="exportCSV()" style="display:none" class="btn btn-bl" style="font-size:11px;padding:5px 12px">CSV 내보내기</button>
+      <div id="view-toggle" style="display:none">
+        <div class="view-toggle">
+          <div class="vt-btn on" onclick="switchView('cal')">캘린더</div>
+          <div class="vt-btn" onclick="switchView('table')">테이블</div>
+          <div class="vt-btn" onclick="switchView('brand')">브랜드별</div>
+        </div>
       </div>
     </div>
   </div>
@@ -390,41 +410,58 @@ let DB = {
 
 const PAVG={ctr:11.51,cvr:3.76,roas:1267};
 const DAYS_KO=['월','화','수','목','금','토','일'];
-/* 실제 DB 기반 요일별 효율 가중치 (월~일, ROAS×CTR×CVR 복합 지수)
-   월:0.91 화:1.35 수:0.93 목:1.07 금:0.69 토:0.94 일:1.11
-   원본: 월ROAS1521 화2890 수1600 목1946 금1073 토1657 일1918 */
-const DB_DOW_W = [0.91, 1.35, 0.93, 1.07, 0.69, 0.94, 1.11]; // 0=월…6=일
-
-/* 기획전 유형은 DB 요일 가중치를 베이스로 증폭/감쇠 */
-function getTypeMultiplier(type, totalDays) {
-  /* 날짜 인덱스(0~totalDays-1)를 0~1 진행률로 환산해 멀티플라이어 반환 */
-  return Array.from({length: totalDays}, (_, i) => {
-    const progress = totalDays > 1 ? i / (totalDays - 1) : 0.5;
-    if (type === 'open')  return 1.0 + (1.0 - progress) * 0.8;   // 초반 최대 1.8
-    if (type === 'close') return 1.0 + progress * 0.8;             // 후반 최대 1.8
-    if (type === 'both')  return 1.0 + Math.sin(progress * Math.PI) * (-0.4) + 0.4 + Math.pow(2*progress-1,2)*0.7; // U자형
-    return 1.0; // flat
-  });
-}
-
-const TYPE_WEIGHTS={
-  open:   [1.8,1.5,1.0,0.8,0.9,1.1,0.9],
-  close:  [0.9,0.9,0.9,1.0,1.4,1.7,1.2],
-  both:   [1.6,1.3,0.8,0.8,1.1,1.6,1.0],
-  flat:   [1.0,1.0,1.0,1.0,1.0,1.0,1.0],
-};
+/* 실제 DB 기반 요일별 효율 가중치 (월~일)
+   월:0.91 화:1.35 수:0.93 목:1.07 금:0.69 토:0.94 일:1.11 */
+const DB_DOW_W = [0.91, 1.35, 0.93, 1.07, 0.69, 0.94, 1.11];
 
 let customWeights = null;
 let currentView = 'cal';
 let planData = null;
+let discountRates = {};
 
-/* ── init weight sliders ── */
-function initWeightSliders(type) {
-  const base = TYPE_WEIGHTS[type || 'both'];
-  customWeights = [...base];
-  renderWeightSliders();
+/* ── 기획전 유형 멀티플라이어 ── */
+function getTypeMultiplier(type, totalDays) {
+  return Array.from({length: totalDays}, (_, i) => {
+    const progress = totalDays > 1 ? i / (totalDays - 1) : 0.5;
+    if (type === 'open')  return 1.0 + (1.0 - progress) * 0.8;
+    if (type === 'close') return 1.0 + progress * 0.8;
+    if (type === 'both')  return 1.0 + Math.sin(progress * Math.PI) * (-0.4) + 0.4 + Math.pow(2*progress-1,2)*0.7;
+    return 1.0;
+  });
 }
 
+/* ── 할인율 입력 렌더링 ── */
+function renderDiscountInputs() {
+  const raw = document.getElementById('brand-input').value.trim();
+  const names = [...new Set(raw.split('\n').map(s=>s.trim().toLowerCase()).filter(Boolean))];
+  const matched = names.filter(n => DB[n]);
+
+  const section = document.getElementById('discount-section');
+  const container = document.getElementById('discount-inputs');
+
+  if (!matched.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  container.innerHTML = matched.map(name => `
+    <div class="discount-row">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input type="number" min="0" max="90" step="1"
+          value="${discountRates[name] || 0}"
+          oninput="discountRates['${name}']=Math.min(90,Math.max(0,parseFloat(this.value)||0))"
+          style="width:52px;padding:4px 6px;font-family:'JetBrains Mono',monospace;font-size:12px">
+        <span style="font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace">%</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function resetDiscounts() {
+  discountRates = {};
+  renderDiscountInputs();
+}
+
+/* ── weight sliders ── */
 function renderWeightSliders() {
   const start = document.getElementById('camp-start').value;
   const startDate = start ? new Date(start) : new Date();
@@ -432,7 +469,6 @@ function renderWeightSliders() {
   if (!customWeights) customWeights = [1,1,1,1,1,1,1];
   const total = customWeights.reduce((a,b)=>a+b,0);
   const budget = parseInt(document.getElementById('total-budget').value)||0;
-  // DB 요일 효율 레이블
   const DOW_ROAS = [1521,2890,1600,1946,1073,1657,1918];
   const DOW_TIER = ['보통','최우수','보통','우수','주의','보통','우수'];
   const DOW_COL  = ['var(--t2)','var(--g)','var(--t2)','var(--bl)','var(--re)','var(--t2)','var(--bl)'];
@@ -486,17 +522,15 @@ function resetWeights() {
 }
 
 document.getElementById('camp-type').addEventListener('change', () => {
-  customWeights = null; // 유형 바뀌면 DB 가중치로 재계산
+  customWeights = null;
   resetWeights();
   updateBudgetPreview();
 });
-
 document.getElementById('camp-start').addEventListener('change', () => {
   customWeights = null;
   resetWeights();
   updateBudgetPreview();
 });
-
 document.getElementById('camp-end').addEventListener('change', () => {
   customWeights = null;
   resetWeights();
@@ -516,7 +550,7 @@ function updateBudgetPreview() {
   if (customWeights) renderWeightSliders();
 }
 
-/* ── score calc ── */
+/* ── score calc (CTR + CVR + ROAS 복합) ── */
 function getPerfType(ctr,cvr){
   if(ctr>=12&&cvr>=5)return{key:'excellent',label:'성과우수',cls:'b-ex'};
   if(ctr>=12&&cvr<5) return{key:'ctr',label:'유입우수',cls:'b-ct'};
@@ -525,12 +559,14 @@ function getPerfType(ctr,cvr){
   return{key:'low',label:'성과저조',cls:'b-lw'};
 }
 
-function calcBrandScore(d){
+function calcBrandScore(d, discount=0){
   const pt=getPerfType(d.ctr,d.cvr);
   const base={excellent:60,ctr:48,cvr:48,notbad:35,low:20}[pt.key];
-  const ctrBonus=Math.min(15,Math.max(-10,((d.ctr-PAVG.ctr)/PAVG.ctr)*15));
-  const cvrBonus=Math.min(10,Math.max(-5,((d.cvr-PAVG.cvr)/PAVG.cvr)*10));
-  return{score:base+ctrBonus+cvrBonus,pt};
+  const ctrBonus  = Math.min(15, Math.max(-10, ((d.ctr-PAVG.ctr)/PAVG.ctr)*15));
+  const cvrBonus  = Math.min(10, Math.max(-5,  ((d.cvr-PAVG.cvr)/PAVG.cvr)*10));
+  const roasBonus = Math.min(20, Math.max(-10, ((d.roas-PAVG.roas)/PAVG.roas)*15));
+  const discBonus = Math.min(10, discount * 0.2); // 50% 할인 시 최대 +10점
+  return{score:base+ctrBonus+cvrBonus+roasBonus+discBonus,pt};
 }
 
 /* ── main planner ── */
@@ -551,13 +587,11 @@ function runPlanner() {
 
   const totalDays = Math.round((endDate-startDate)/86400000)+1;
 
-  // 날짜 배열
   const dates = [];
   for (let i=0;i<totalDays;i++){
     const d=new Date(startDate); d.setDate(startDate.getDate()+i); dates.push(d);
   }
 
-  // 가중치: DB 요일 효율 x 기획전 유형 멀티플라이어
   const type = document.getElementById('camp-type').value;
   if (!customWeights || customWeights.length !== totalDays) {
     const typeMult = getTypeMultiplier(type, totalDays);
@@ -568,38 +602,41 @@ function runPlanner() {
   }
   const wSlice = customWeights.slice(0,totalDays);
   const wTotal = wSlice.reduce((a,b)=>a+b,0);
-
-  // 일별 예산
   const dayBudgets = wSlice.map(w => Math.round(totalBudget * w / wTotal));
 
-  // 브랜드 파싱 + 점수 산출
   const raw = document.getElementById('brand-input').value.trim();
   const names = [...new Set(raw.split('\n').map(s=>s.trim().toLowerCase()).filter(Boolean))];
+
   const scored = names.map(name => {
     const d = DB[name];
-    if (!d) return { name, matched:false, score:-999, pt:null, d:null };
-    const {score,pt} = calcBrandScore(d);
-    return { name, matched:true, score, pt, d };
-  }).filter(b=>b.matched && b.score > -999);
+    if (!d) return null;
+    const discount = discountRates[name] || 0;
+    const {score,pt} = calcBrandScore(d, discount);
+    return { name, score, pt, d, discount };
+  }).filter(Boolean);
   scored.sort((a,b)=>b.score-a.score);
 
   const unmatched = names.filter(n=>!DB[n]);
   document.getElementById('match-status').textContent =
     `${scored.length}개 매칭 / ${unmatched.length > 0 ? unmatched.length+'개 미등록' : '전체 매칭'}`;
 
-  // 브랜드를 날짜에 배분 — 점수 순으로 순환 배치
-  // 같은 브랜드는 7일 이내 재발송 안 함 (피로도)
+  // 미등록 브랜드 표시
+  const unmatchedEl = document.getElementById('unmatched-list');
+  if (unmatched.length > 0) {
+    unmatchedEl.innerHTML = `<div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-family:'JetBrains Mono',monospace">미등록 브랜드</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${unmatched.map(n=>`<span style="font-size:10px;font-family:'JetBrains Mono',monospace;background:var(--redim);border:1px solid var(--rebdr);border-radius:4px;padding:2px 6px;color:var(--re)">${n}</span>`).join('')}
+      </div>`;
+  } else {
+    unmatchedEl.innerHTML = '';
+  }
+
   const dayPlans = dates.map((d,i) => ({
-    date: d,
-    budget: dayBudgets[i],
-    brands: [],
-    totalSends: 0,
-    estRev: 0,
-    estRoas: 0,
+    date: d, budget: dayBudgets[i],
+    brands: [], totalSends: 0, estRev: 0, estRoas: 0,
   }));
 
-  // 브랜드 배분 알고리즘: 예산 규모 비례 + 성과 순위 기반
-  const usedOn = {}; // brand -> last used day index
+  const usedOn = {};
   scored.forEach(b => usedOn[b.name] = -99);
 
   for (let di=0; di<totalDays; di++) {
@@ -608,18 +645,23 @@ function runPlanner() {
     const available = scored.filter(b => (di - (usedOn[b.name]||(-99))) >= fatigueCut);
     if (!available.length) continue;
 
-    // 하루 예산을 최대 브랜드 수로 나눠 각 브랜드 예산 배정
     const take = Math.min(maxPerDay, available.length);
     const perBrand = Math.round(dayBudget / take);
-
     let usedBudget = 0;
+
     for (let bi=0; bi<take; bi++) {
       const brand = available[bi];
       const budget = bi === take-1 ? dayBudget - usedBudget : perBrand;
       const sends = Math.round(budget / unitCost);
       const aov = brand.d.purchases > 0 ? brand.d.rev / brand.d.purchases : 0;
-      const estRev = sends * (brand.d.cvr/100) * aov;
+
+      // 할인율 반영: AOV는 (1-discount)배, CVR은 (1+discount)배
+      const discFactor = (brand.discount || 0) / 100;
+      const effectiveAOV = aov * (1 - discFactor);
+      const effectiveCVR = brand.d.cvr * (1 + discFactor) / 100;
+      const estRev = sends * effectiveCVR * effectiveAOV;
       const estRoas = budget > 0 ? (estRev / budget) * 100 : 0;
+
       dayPlans[di].brands.push({ ...brand, budget, sends, estRev, estRoas });
       dayPlans[di].totalSends += sends;
       dayPlans[di].estRev += estRev;
@@ -632,7 +674,6 @@ function runPlanner() {
 
   planData = { campName, startStr, endStr, totalBudget, unitCost, dayPlans, unmatched };
 
-  // 요약 업데이트
   const totalSends = dayPlans.reduce((a,d)=>a+d.totalSends,0);
   const totalRev = dayPlans.reduce((a,d)=>a+d.estRev,0);
   const totalRoas = totalBudget > 0 ? (totalRev/totalBudget)*100 : 0;
@@ -651,6 +692,7 @@ function runPlanner() {
   document.getElementById('main-sub').textContent =
     `${startStr} ~ ${endStr} · ${totalDays}일간 · ${activedays}일 발송 · ${scored.length}개 브랜드`;
   document.getElementById('view-toggle').style.display='block';
+  document.getElementById('csv-btn').style.display='inline-flex';
 
   currentView = 'cal';
   document.querySelectorAll('.vt-btn').forEach((b,i)=>b.classList.toggle('on',i===0));
@@ -658,54 +700,64 @@ function runPlanner() {
   toast('플랜 생성 완료');
 }
 
-/* ── Calendar view ── */
+/* ── Calendar view (7일 초과 다중 행 지원) ── */
+function renderDayCard(dp, allDayPlans) {
+  const d = dp.date;
+  const dow = d.getDay()===0?6:d.getDay()-1;
+  const isWknd = dow>=5;
+  const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+  const maxBudget = Math.max(...allDayPlans.map(x=>x.budget));
+  const barPct = maxBudget>0 ? (dp.budget/maxBudget*100).toFixed(0) : 0;
+  const isEmpty = dp.brands.length===0;
+  const DOW_TIER=['보통','최우수','보통','우수','주의','보통','우수'];
+  const DOW_COL=['var(--t3)','var(--g)','var(--t3)','var(--bl)','var(--re)','var(--t3)','var(--bl)'];
+  return `<div class="day-card" style="${isWknd?'border-color:var(--pubdr);':''}${dow===1?'border-color:var(--gbdr);':''}">
+    <div class="day-header">
+      <div>
+        <div class="day-name" style="${isWknd?'color:var(--pu)':dow===1?'color:var(--g)':''}">${DAYS_KO[dow]}</div>
+        <div class="day-date">${dateStr}</div>
+      </div>
+      <div>
+        <div class="day-budget">${(dp.budget/10000).toFixed(1)}만</div>
+        <div style="font-size:9px;color:${DOW_COL[dow]};font-family:'JetBrains Mono',monospace;text-align:right;margin-top:2px">${DOW_TIER[dow]}</div>
+      </div>
+    </div>
+    <div class="bbar-wrap"><div class="bbar-fill" style="width:${barPct}%"></div></div>
+    ${isEmpty ? `<div class="no-brands">발송 없음</div>` :
+      dp.brands.map(b => {
+        const roasColor = b.estRoas > PAVG.roas ? 'var(--g)' : b.estRoas > 800 ? 'var(--am)' : 'var(--re)';
+        const discTag = b.discount > 0 ? `<span style="font-size:9px;color:var(--am);font-family:'JetBrains Mono',monospace"> -${b.discount}%</span>` : '';
+        return `<div class="brand-slot">
+          <div style="flex:1;min-width:0">
+            <div class="slot-name">${b.name}${discTag}</div>
+            <div class="slot-sends">${b.sends.toLocaleString()}명 · <span class="bdg ${b.pt.cls}" style="font-size:9px;padding:1px 5px">${b.pt.label}</span></div>
+          </div>
+          <div class="slot-roas" style="color:${roasColor}">${b.estRoas.toFixed(0)}%</div>
+        </div>`;
+      }).join('')
+    }
+    ${!isEmpty ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1);display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace">
+      <span style="color:var(--t3)">${dp.brands.length}개 브랜드</span>
+      <span style="color:var(--t2)">${dp.totalSends.toLocaleString()}명</span>
+    </div>` : ''}
+  </div>`;
+}
+
 function renderCalView() {
   const {dayPlans} = planData;
-  const cols = Math.min(dayPlans.length, 7);
   const content = document.getElementById('main-content');
-  content.innerHTML = `<div class="cal" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${
-    dayPlans.map((dp,i) => {
-      const d = dp.date;
-      const dow = d.getDay()===0?6:d.getDay()-1;
-      const isWknd = dow>=5;
-      const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
-      const maxBudget = Math.max(...dayPlans.map(x=>x.budget));
-      const barPct = maxBudget>0 ? (dp.budget/maxBudget*100).toFixed(0) : 0;
-      const isEmpty = dp.brands.length===0;
-      const DOW_TIER=['보통','최우수','보통','우수','주의','보통','우수'];
-      const DOW_COL=['var(--t3)','var(--g)','var(--t3)','var(--bl)','var(--re)','var(--t3)','var(--bl)'];
-      const DOW_ROAS_DB=[1521,2890,1600,1946,1073,1657,1918];
-      return `<div class="day-card" style="${isWknd?'border-color:var(--pubdr);':''}${dow===1?'border-color:var(--gbdr);':''}">
-        <div class="day-header">
-          <div>
-            <div class="day-name" style="${isWknd?'color:var(--pu)':dow===1?'color:var(--g)':''}">${DAYS_KO[dow]}</div>
-            <div class="day-date">${dateStr}</div>
-          </div>
-          <div>
-            <div class="day-budget">${(dp.budget/10000).toFixed(1)}만</div>
-            <div style="font-size:9px;color:${DOW_COL[dow]};font-family:'JetBrains Mono',monospace;text-align:right;margin-top:2px">${DOW_TIER[dow]}</div>
-          </div>
-        </div>
-        <div class="bbar-wrap"><div class="bbar-fill" style="width:${barPct}%"></div></div>
-        ${isEmpty ? `<div class="no-brands">발송 없음</div>` :
-          dp.brands.map(b => {
-            const roasColor = b.estRoas > PAVG.roas ? 'var(--g)' : b.estRoas > 800 ? 'var(--am)' : 'var(--re)';
-            return `<div class="brand-slot">
-              <div>
-                <div class="slot-name">${b.name}</div>
-                <div class="slot-sends">${b.sends.toLocaleString()}명 · <span class="bdg ${b.pt.cls}" style="font-size:9px;padding:1px 5px">${b.pt.label}</span></div>
-              </div>
-              <div class="slot-roas" style="color:${roasColor}">${b.estRoas.toFixed(0)}%</div>
-            </div>`;
-          }).join('')
-        }
-        ${!isEmpty ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1);display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace">
-          <span style="color:var(--t3)">${dp.brands.length}개 브랜드</span>
-          <span style="color:var(--t2)">${dp.totalSends.toLocaleString()}명</span>
-        </div>` : ''}
-      </div>`;
-    }).join('')
-  }</div>`;
+  // 7일씩 주 단위로 분할
+  const weeks = [];
+  for (let i=0; i<dayPlans.length; i+=7) weeks.push(dayPlans.slice(i,i+7));
+
+  content.innerHTML = weeks.map((week, wi) => {
+    const weekLabel = weeks.length > 1
+      ? `<div style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:6px;letter-spacing:.05em">${wi+1}주차</div>`
+      : '';
+    return `${weekLabel}<div class="cal" style="grid-template-columns:repeat(${week.length},minmax(0,1fr))">
+      ${week.map(dp => renderDayCard(dp, dayPlans)).join('')}
+    </div>`;
+  }).join('');
 }
 
 /* ── Table view ── */
@@ -718,14 +770,10 @@ function renderTableView() {
       const dow = d.getDay()===0?6:d.getDay()-1;
       rows.push({
         date:`${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[dow]})`,
-        name: b.name,
-        pt: b.pt,
-        budget: b.budget,
-        sends: b.sends,
-        ctr: b.d.ctr,
-        cvr: b.d.cvr,
-        estRev: b.estRev,
-        estRoas: b.estRoas,
+        name: b.name, pt: b.pt, discount: b.discount||0,
+        budget: b.budget, sends: b.sends,
+        ctr: b.d.ctr, cvr: b.d.cvr,
+        estRev: b.estRev, estRoas: b.estRoas,
       });
     });
   });
@@ -734,9 +782,9 @@ function renderTableView() {
     <div style="overflow-x:auto">
     <table class="tbl">
       <thead><tr>
-        <th>발송일</th><th>브랜드</th><th>유형</th>
+        <th>발송일</th><th>브랜드</th><th>유형</th><th style="text-align:right">할인율</th>
         <th style="text-align:right">예산</th><th style="text-align:right">모수</th>
-        <th style="text-align:right">평균 CTR</th><th style="text-align:right">평균 CVR</th>
+        <th style="text-align:right">CTR</th><th style="text-align:right">CVR</th>
         <th style="text-align:right">예상 매출</th><th style="text-align:right">예상 ROAS</th>
       </tr></thead>
       <tbody>${rows.map(r=>`
@@ -744,6 +792,7 @@ function renderTableView() {
           <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2)">${r.date}</td>
           <td style="font-weight:500;font-family:'JetBrains Mono',monospace">${r.name}</td>
           <td><span class="bdg ${r.pt.cls}">${r.pt.label}</span></td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.discount>0?'var(--am)':'var(--t3)'}">${r.discount>0?'-'+r.discount+'%':'-'}</td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace">${r.budget.toLocaleString()}</td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--g)">${r.sends.toLocaleString()}</td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.ctr>=PAVG.ctr?'var(--g)':'var(--t2)'}">${r.ctr.toFixed(1)}%</td>
@@ -777,10 +826,12 @@ function renderBrandView() {
     ${brands.map(b=>{
       const overallRoas = b.totalBudget>0?(b.totalRev/b.totalBudget)*100:0;
       const roasColor=overallRoas>PAVG.roas?'var(--g)':overallRoas>800?'var(--am)':'var(--re)';
+      const discTag = b.discount > 0 ? `<span class="bdg b-wn" style="font-size:9px;padding:1px 5px">-${b.discount}%</span>` : '';
       return `<div style="background:var(--bg2);border:1px solid var(--b1);border-radius:var(--rad);padding:14px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
           <span style="font-size:14px;font-weight:600;font-family:'JetBrains Mono',monospace">${b.name}</span>
           <span class="bdg ${b.pt.cls}">${b.pt.label}</span>
+          ${discTag}
         </div>
         <div class="g3" style="margin-bottom:10px">
           <div style="background:var(--bg3);border-radius:var(--rad-sm);padding:7px 8px">
@@ -803,6 +854,34 @@ function renderBrandView() {
       </div>`;
     }).join('')}
     </div>`;
+}
+
+/* ── CSV 내보내기 ── */
+function exportCSV() {
+  if (!planData) { toast('플랜을 먼저 생성해주세요'); return; }
+  const rows = [['발송일','브랜드','유형','할인율(%)','예산(원)','발송모수','CTR(%)','CVR(%)','예상매출(원)','예상ROAS(%)']];
+  planData.dayPlans.forEach(dp => {
+    dp.brands.forEach(b => {
+      const d = dp.date;
+      const dow = d.getDay()===0?6:d.getDay()-1;
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}(${DAYS_KO[dow]})`;
+      rows.push([
+        dateStr, b.name, b.pt.label, b.discount||0,
+        b.budget, b.sends,
+        b.d.ctr.toFixed(1), b.d.cvr.toFixed(1),
+        Math.round(b.estRev), Math.round(b.estRoas)
+      ]);
+    });
+  });
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${planData.campName}_플랜.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV 내보내기 완료');
 }
 
 /* ── View switch ── */
@@ -865,6 +944,7 @@ function toast(msg){
 resetWeights();
 updateBudgetPreview();
 renderDBList();
+renderDiscountInputs();
 </script>
 </body>
 </html>
