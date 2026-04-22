@@ -137,6 +137,20 @@ input[type=range]:focus{outline:none}
 /* Discount inputs */
 .discount-row{display:grid;grid-template-columns:1fr 72px;align-items:center;gap:6px;margin-bottom:5px}
 .discount-row input[type=number]{padding:5px 8px;text-align:right}
+
+/* Campaign tab */
+.camp-item{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--rad-sm);padding:10px 12px;margin-bottom:5px;transition:border-color .15s}
+.camp-item:hover{border-color:var(--b2)}
+.camp-item.has-db{border-left:2px solid var(--gbdr)}
+.camp-type-w{background:rgba(79,156,248,.12);color:var(--bl);border:1px solid var(--blbdr)}
+.camp-type-e{background:rgba(167,139,250,.12);color:var(--pu);border:1px solid var(--pubdr)}
+.camp-type-s{background:rgba(245,166,35,.12);color:var(--am);border:1px solid var(--ambdr)}
+.camp-type-t{background:rgba(32,208,122,.12);color:var(--g);border:1px solid var(--gbdr)}
+.camp-type-p{background:rgba(224,80,80,.12);color:var(--re);border:1px solid var(--rebdr)}
+.period-select{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--rad-sm);padding:5px 8px}
+.type-pill{padding:3px 9px;font-size:10px;border-radius:20px;cursor:pointer;border:1px solid var(--b1);color:var(--t3);font-family:'JetBrains Mono',monospace;transition:all .15s;background:transparent}
+.type-pill:hover{border-color:var(--b2);color:var(--t2)}
+.type-pill.on{background:var(--bldim);border-color:var(--blbdr);color:var(--bl)}
 </style>
 </head>
 <body>
@@ -152,6 +166,7 @@ input[type=range]:focus{outline:none}
     <div class="tab on" onclick="switchTab('plan')">플랜 설정</div>
     <div class="tab" onclick="switchTab('brands')">브랜드</div>
     <div class="tab" onclick="switchTab('weight')">배분 조정</div>
+    <div class="tab" onclick="switchTab('camp')">기획전</div>
   </div>
 
   <!-- PLAN TAB -->
@@ -274,6 +289,39 @@ andblank</textarea>
       <span style="color:var(--g)">화요일</span>이 ROAS 2,890% · CTR 18.8%로 가장 효율적이며,
       <span style="color:var(--re)">금요일</span>이 ROAS 1,073%로 가장 낮습니다.<br>
       기획전 유형은 요일 효율에 추가로 오픈/마감 가중치를 곱합니다.
+    </div>
+  </div>
+
+  <!-- CAMPAIGN TAB -->
+  <div id="tab-camp" style="display:none" class="scr">
+    <div style="margin-bottom:10px">
+      <div class="lbl" style="margin-bottom:6px">기획전 주차</div>
+      <select id="camp-period" class="period-select" style="width:100%" onchange="renderCampaignTab()">
+        <option value="all">전체</option>
+        <option value="4월 1주">4월 1주</option>
+        <option value="4월 2주" selected>4월 2주</option>
+        <option value="4월 3주">4월 3주</option>
+        <option value="4월 4주">4월 4주</option>
+        <option value="4월 5주">4월 5주</option>
+        <option value="5월 2주">5월 2주</option>
+        <option value="5월 3주">5월 3주</option>
+        <option value="5월 4주">5월 4주</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px" id="camp-type-pills">
+      <button class="type-pill on" onclick="setCampType('all')">전체</button>
+      <button class="type-pill" onclick="setCampType('위탁')">위탁</button>
+      <button class="type-pill" onclick="setCampType('외부채널')">외부채널</button>
+      <button class="type-pill" onclick="setCampType('스토어')">스토어</button>
+      <button class="type-pill" onclick="setCampType('통합')">통합</button>
+      <button class="type-pill" onclick="setCampType('PB')">PB</button>
+    </div>
+    <div id="camp-list"></div>
+    <div style="margin-top:10px">
+      <button class="btn btn-bl btn-full" onclick="importCampaignBrands()" style="font-size:12px">
+        이 주차 위탁 브랜드 → 플랜에 불러오기
+      </button>
+      <div style="font-size:10px;color:var(--t3);margin-top:5px;text-align:center;font-family:'JetBrains Mono',monospace">DB 매칭된 위탁 브랜드만 불러옵니다</div>
     </div>
   </div>
 
@@ -408,6 +456,140 @@ let DB = {
   "ziwipeak":{ctr:23.98,cvr:3.76,roas:2808,rev:1917316,sends:3447,purchases:30},
 };
 
+/* ════════════════════════ KO ALIASES ════════════════════════ */
+const DB_KO = {
+  'lulukitchen':'룰루키친','thinklikepet':'씽크라이크펫','andblank':'앤블랭크',
+  'trustyfood':'트러스티푸드','boondog':'분독','hurray':'허레이',
+  'coteacote':'꼬떼아꼬떼','chiot':'쉬오트','oneuru':'오느루',
+  'modernhouse':'모던하우스','montie':'몽띠에','popone':'포포네',
+  'brightkins':'브라이트킨즈','kinikini':'키니키니','bennys':'베니즈',
+  'pawavel':'포우에블','diggo':'디고','guruguru':'구루구루','swiffy':'스위피',
+  'baandddang':'바앤당','freschi':'프레스키','gwt':'gwt','otms':'otms',
+  'bridgedog':'브릿지독','lorenz':'로렌즈','oraeorae':'오래오래',
+  'superchew':'슈퍼츄','thehonestkitchen':'더어네스트키친','stellachewys':'스텔라츄이',
+  'stroll':'스트롤','tiolio':'티올리오','plushpuppy':'플러시퍼피',
+};
+const DB_KO_REV = Object.fromEntries(Object.entries(DB_KO).map(([k,v])=>[v,k]));
+
+/* ════════════════════════ CAMPAIGNS ════════════════════════ */
+const CAMPAIGNS = [
+  // 4월 1주차
+  {period:'4월 1주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] 주간행사',code:'',dbKey:null},
+  {period:'4월 1주',mgr:'김수빈',type:'통합',name:'만우절 기념, 바잇미 패밀리 세일',code:'100006089',dbKey:null},
+  {period:'4월 1주',mgr:'김수빈',type:'위탁',name:'스위피 화제의 신상품 재입고',code:'100006094',dbKey:'swiffy'},
+  {period:'4월 1주',mgr:'김수빈',type:'위탁',name:'리카리카 만우절 기념 거짓말같은 세일',code:'',dbKey:null},
+  {period:'4월 1주',mgr:'김소희',type:'외부채널',name:'[무신사] 4월 멤버스데이',code:'',dbKey:null},
+  {period:'4월 1주',mgr:'박규리',type:'위탁',name:'씽크라이크펫 20%쿠폰위크',code:'100006096',dbKey:'thinklikepet'},
+  {period:'4월 1주',mgr:'박규리',type:'위탁',name:'일로 봄맞이 산책위크',code:'100006098',dbKey:null},
+  // 4월 2주차
+  {period:'4월 2주',mgr:'김소희',type:'스토어',name:'[SSFW] 4월 라이프위크',code:'5002630194',dbKey:null},
+  {period:'4월 2주',mgr:'김소희',type:'스토어',name:'[컴피라비올리] 4월 라이프위크',code:'5002630203',dbKey:null},
+  {period:'4월 2주',mgr:'이지윤',type:'스토어',name:'[바잇미] 4월 라이프위크',code:'5002630174',dbKey:null},
+  {period:'4월 2주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] 주간행사',code:'',dbKey:null},
+  {period:'4월 2주',mgr:'김소희',type:'외부채널',name:'[29CM] 4월 포커스 기획전_바잇미',code:'',dbKey:null},
+  {period:'4월 2주',mgr:'김소희',type:'외부채널',name:'[29CM] 4월 반려동물 상품기획전',code:'',dbKey:null},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'트러스티푸드 신상 코코넛 터키츄 타임딜',code:'',dbKey:'trustyfood'},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'트러스티푸드 신상 터키츄&살라미칩 출시',code:'',dbKey:'trustyfood'},
+  {period:'4월 2주',mgr:'신유진',type:'통합',name:'4월 메인기획전',code:'100006144',dbKey:null},
+  {period:'4월 2주',mgr:'신유진',type:'통합',name:'4월 메인기획전_봄에디션특가',code:'100006148',dbKey:null},
+  {period:'4월 2주',mgr:'신유진',type:'통합',name:'4월 메인기획전_럭키박스',code:'100006148',dbKey:null},
+  {period:'4월 2주',mgr:'김수빈',type:'위탁',name:'분독 4월 메인기획전 20%쿠폰',code:'',dbKey:'boondog'},
+  {period:'4월 2주',mgr:'김수빈',type:'위탁',name:'간증폭발 고함량 영양제, 닥터카엘 신규입점',code:'',dbKey:null},
+  {period:'4월 2주',mgr:'신유진',type:'위탁',name:'렘미끼 링곤베리 9900원 선착순 체험특가',code:'100006150',dbKey:null},
+  {period:'4월 2주',mgr:'신유진',type:'PB',name:'알배추 노즈워크 오픈할인',code:'',dbKey:null},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'폼포라펫 역대 최저가 20%쿠폰위크',code:'100006102',dbKey:null},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'앤블랭크 26ss 신상위크',code:'100006106',dbKey:'andblank'},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'누우띠&다이노탱 콜라보위크',code:'100006128',dbKey:null},
+  {period:'4월 2주',mgr:'김수빈',type:'위탁',name:'나만의 맞춤 가방, 구루구루 바잇미 최대 혜택',code:'100006107',dbKey:'guruguru'},
+  {period:'4월 2주',mgr:'이지윤',type:'스토어',name:'[바잇미] 4월 라이프위크_오늘의브랜드',code:'5002651929',dbKey:null},
+  // 4월 3주차
+  {period:'4월 3주',mgr:'신유진',type:'PB',name:'4월 월간바잇미',code:'100006166',dbKey:null},
+  {period:'4월 3주',mgr:'김수빈',type:'위탁',name:'버디벨트 26SS 신상컬러 출시',code:'100006109',dbKey:null},
+  {period:'4월 3주',mgr:'김수빈',type:'위탁',name:'허레이 물티슈 리뉴얼 기념 특가',code:'100006116',dbKey:'hurray'},
+  {period:'4월 3주',mgr:'김수빈',type:'위탁',name:'벨체르 야크고기간식, 바잇미 단독 선런칭 특가',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김수빈',type:'위탁',name:'감성디자인, 인히어런트 브랜드위크',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김수빈',type:'위탁',name:'수제식품 1위 브랜드 아더마스 ~30%',code:'100006113',dbKey:null},
+  {period:'4월 3주',mgr:'박규리',type:'위탁',name:'룰루키친 전 상품 25%할인',code:'100006108',dbKey:'lulukitchen'},
+  {period:'4월 3주',mgr:'김수빈',type:'PB',name:'봄맞이 산책이동용품 모음전',code:'100006131',dbKey:null},
+  {period:'4월 3주',mgr:'신유진',type:'PB',name:'4월 월간바잇미_메인전시',code:'100006166',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'스토어',name:'이동가방&산책용품 SALE ~37%',code:'5002681668',dbKey:null},
+  {period:'4월 3주',mgr:'박규리',type:'위탁',name:'꼬떼아꼬떼 26ss 신상위크',code:'100006164',dbKey:'coteacote'},
+  {period:'4월 3주',mgr:'박규리',type:'위탁',name:'밥투정 없애는 마법, 바야 최대 45%할인',code:'100006115',dbKey:null},
+  {period:'4월 3주',mgr:'박규리',type:'위탁',name:'쉬오트 창고대방출 UP TO 55%',code:'100006139',dbKey:'chiot'},
+  {period:'4월 3주',mgr:'신유진',type:'PB',name:'리뉴얼 헤잇미 스프레이 오픈',code:'100006184',dbKey:null},
+  {period:'4월 3주',mgr:'신유진',type:'통합',name:'4월_주말특가',code:'100006176',dbKey:null},
+  {period:'4월 3주',mgr:'김수빈',type:'위탁',name:'디고 샴푸 1+1',code:'',dbKey:'diggo'},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] NEW 포미위크',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 월간이구홈',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 월간이구홈_브랜드위크_바잇미',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 월간이구홈_브랜드위크_SSFW',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 월간이구홈_브랜드위크_애플사이다레시피',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'스토어',name:'컴피라비올리 이동가방 SALE ~37%',code:'5002681668',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 월간이구홈_브랜드위크_컴피라비올리',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[무신사] 지구의날 상품 기획전',code:'',dbKey:null},
+  {period:'4월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 지구의날 상품 기획전',code:'',dbKey:null},
+  // 4월 4주차
+  {period:'4월 4주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] 주간행사',code:'',dbKey:null},
+  {period:'4월 4주',mgr:'박규리',type:'위탁',name:'브라이트킨즈 카누들 댕블럭 타임딜',code:'',dbKey:'brightkins'},
+  {period:'4월 4주',mgr:'김수빈',type:'위탁',name:'포포네 자연식위크 ~15%',code:'',dbKey:'popone'},
+  {period:'4월 4주',mgr:'박규리',type:'통합',name:'4월 강아지 동반여행 기획전(메인전시)',code:'100006171',dbKey:null},
+  {period:'4월 4주',mgr:'박규리',type:'위탁',name:'브라이트킨즈 노즈워크위크',code:'100006124',dbKey:'brightkins'},
+  {period:'4월 4주',mgr:'박규리',type:'위탁',name:'키니키니xLG트윈스 콜라보위크',code:'100006154',dbKey:'kinikini'},
+  {period:'4월 4주',mgr:'김수빈',type:'위탁',name:'몽띠에 26SS 신상 출시기념 ~30%',code:'100006152',dbKey:'montie'},
+  {period:'4월 4주',mgr:'김수빈',type:'위탁',name:'분독 봄산책 특가',code:'100006162',dbKey:'boondog'},
+  {period:'4월 4주',mgr:'김수빈',type:'위탁',name:'프리미엄 저알러지 펫트리언츠 입점특가',code:'',dbKey:null},
+  {period:'4월 4주',mgr:'김수빈',type:'위탁',name:'몽그리 유기농 수제간식 특가~23%',code:'100006168',dbKey:null},
+  {period:'4월 4주',mgr:'신유진',type:'위탁',name:'오느루 브랜드위크 단독할인',code:'100006185',dbKey:'oneuru'},
+  {period:'4월 4주',mgr:'신유진',type:'PB',name:'바잇미 산리오캐릭터즈 1차 드롭',code:'100006178',dbKey:null},
+  {period:'4월 4주',mgr:'김소희',type:'외부채널',name:'[무신사] 산리오 단독 선발매_쿨파우치',code:'',dbKey:null},
+  {period:'4월 4주',mgr:'박규리',type:'위탁',name:'베니즈 균일가 특가 5,900원~',code:'100006141',dbKey:'bennys'},
+  {period:'4월 4주',mgr:'김소희',type:'스토어',name:'[바잇미] 가정의달+세일',code:'',dbKey:null},
+  {period:'4월 4주',mgr:'김소희',type:'스토어',name:'[SSFW] 가정의달+세일',code:'5002694192',dbKey:null},
+  {period:'4월 4주',mgr:'김소희',type:'스토어',name:'[컴피라비올리] 가정의달+세일',code:'5002694162',dbKey:null},
+  {period:'4월 4주',mgr:'이지윤',type:'스토어',name:'[바잇미] 신상위크',code:'5002669518',dbKey:null},
+  {period:'4월 4주',mgr:'이지윤',type:'스토어',name:'[바잇미] 라이브',code:'1888452',dbKey:null},
+  // 4월 5주차
+  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'베베페페 의류 타임딜',code:'',dbKey:null},
+  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'베베페페 최대 82%할인',code:'100006160',dbKey:null},
+  {period:'4월 5주',mgr:'김수빈',type:'통합',name:'4월 바이잇데이',code:'100006186',dbKey:null},
+  {period:'4월 5주',mgr:'김수빈',type:'위탁',name:'패리스독 26SS 신상출시',code:'100006194',dbKey:null},
+  {period:'4월 5주',mgr:'신유진',type:'위탁',name:'누핀 품절대란 누누스낵 프리오더 오픈',code:'100006197',dbKey:null},
+  {period:'4월 5주',mgr:'신유진',type:'PB',name:'산리오 2차 드롭',code:'',dbKey:null},
+  {period:'4월 5주',mgr:'김수빈',type:'위탁',name:'26SS 포우에블 안티버그 쿨링위크',code:'100006165',dbKey:'pawavel'},
+  {period:'4월 5주',mgr:'김수빈',type:'위탁',name:'스페인 대표사료 디바크 최저가',code:'100006143',dbKey:null},
+  {period:'4월 5주',mgr:'김수빈',type:'위탁',name:'맞춤 머드 테라피, 디얼스코 무제한 쿠폰',code:'100006142',dbKey:null},
+  {period:'4월 5주',mgr:'김수빈',type:'위탁',name:'모던하우스 26SS 신상위크',code:'100006161',dbKey:'modernhouse'},
+  {period:'4월 5주',mgr:'김소희',type:'외부채널',name:'[무신사] 5월 멤버스데이',code:'',dbKey:null},
+  {period:'4월 5주',mgr:'신유진',type:'위탁',name:'닥터뉴토 브랜드위크',code:'100006200',dbKey:null},
+  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'톰리프 역대 최저가, 20%쿠폰위크',code:'100006158',dbKey:null},
+  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'펫츠랜드 26SS+균일가 특가',code:'100006181',dbKey:null},
+  {period:'4월 5주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] 어린이날/가정의달',code:'',dbKey:null},
+  {period:'4월 5주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] 쟁쟁한특가',code:'',dbKey:null},
+  {period:'4월 5주',mgr:'김소희',type:'외부채널',name:'[W컨셉] 가정의달 선물 기획전_컴피라비올리',code:'',dbKey:null},
+  {period:'4월 5주',mgr:'김소희',type:'외부채널',name:'[카톡 쇼핑하기] 카카오쇼핑라이브',code:'',dbKey:null},
+  // 5월 2주차
+  {period:'5월 2주',mgr:'이지윤',type:'스토어',name:'[바잇미] 네이버펫이쏜다',code:'',dbKey:null},
+  {period:'5월 2주',mgr:'김소희',type:'스토어',name:'[SSFW] 네이버펫이쏜다',code:'5002677920',dbKey:null},
+  {period:'5월 2주',mgr:'김소희',type:'스토어',name:'[컴피라비올리] 네이버펫이쏜다',code:'5002677921',dbKey:null},
+  {period:'5월 2주',mgr:'박규리',type:'위탁',name:'비토/닥터리코/애드벳 최대 70%할인',code:'',dbKey:null},
+  {period:'5월 2주',mgr:'박규리',type:'위탁',name:'트러스티푸드 20%쿠폰위크',code:'100006193',dbKey:'trustyfood'},
+  {period:'5월 2주',mgr:'박규리',type:'위탁',name:'유산균 명가, 빌리스벳 특가위크',code:'100006195',dbKey:null},
+  {period:'5월 2주',mgr:'김소희',type:'스토어',name:'[SSFW] 5월 네이버펫이쏜다_오늘의브랜드',code:'',dbKey:null},
+  {period:'5월 2주',mgr:'이지윤',type:'스토어',name:'[바잇미] 네이버펫이쏜다_오늘의브랜드',code:'',dbKey:null},
+  {period:'5월 2주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] 어버이날+스승의날',code:'',dbKey:null},
+  {period:'5월 2주',mgr:'김소희',type:'스토어',name:'[컴피라비올리] 5월 네이버펫이쏜다_오늘의브랜드',code:'',dbKey:null},
+  // 5월 3주차
+  {period:'5월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 쇼케이스_바잇미',code:'',dbKey:null},
+  {period:'5월 3주',mgr:'김소희',type:'외부채널',name:'[29CM] 5월 반려동물 상품기획전',code:'',dbKey:null},
+  {period:'5월 3주',mgr:'김소희',type:'외부채널',name:'[W컨셉] 컴피라비올리 신규 입점 기획전',code:'',dbKey:null},
+  {period:'5월 3주',mgr:'이지윤',type:'스토어',name:'[바잇미] 라이브',code:'',dbKey:null},
+  // 5월 4주차
+  {period:'5월 4주',mgr:'이지윤',type:'스토어',name:'[바잇미] 라이브',code:'',dbKey:null},
+  {period:'5월 4주',mgr:'김소희',type:'스토어',name:'[SSFW] 5월 라이프위크',code:'',dbKey:null},
+  {period:'5월 4주',mgr:'김소희',type:'스토어',name:'[컴피라비올리] 5월 라이프위크',code:'',dbKey:null},
+  {period:'5월 4주',mgr:'이지윤',type:'스토어',name:'[바잇미] 5월 라이프위크',code:'',dbKey:null},
+];
+
 const PAVG={ctr:11.51,cvr:3.76,roas:1267};
 const DAYS_KO=['월','화','수','목','금','토','일'];
 /* 실제 DB 기반 요일별 효율 가중치 (월~일)
@@ -430,10 +612,17 @@ function getTypeMultiplier(type, totalDays) {
   });
 }
 
+/* ── 브랜드명 정규화 (한글 → 영문 키) ── */
+function normalizeBrandName(s) {
+  const lower = s.trim().toLowerCase();
+  if (DB[lower]) return lower;
+  return DB_KO_REV[s.trim()] || lower;
+}
+
 /* ── 할인율 입력 렌더링 ── */
 function renderDiscountInputs() {
   const raw = document.getElementById('brand-input').value.trim();
-  const names = [...new Set(raw.split('\n').map(s=>s.trim().toLowerCase()).filter(Boolean))];
+  const names = [...new Set(raw.split('\n').map(s=>normalizeBrandName(s)).filter(Boolean))];
   const matched = names.filter(n => DB[n]);
 
   const section = document.getElementById('discount-section');
@@ -605,7 +794,7 @@ function runPlanner() {
   const dayBudgets = wSlice.map(w => Math.round(totalBudget * w / wTotal));
 
   const raw = document.getElementById('brand-input').value.trim();
-  const names = [...new Set(raw.split('\n').map(s=>s.trim().toLowerCase()).filter(Boolean))];
+  const names = [...new Set(raw.split('\n').map(s=>normalizeBrandName(s)).filter(Boolean))];
 
   const scored = names.map(name => {
     const d = DB[name];
@@ -896,34 +1085,117 @@ function switchView(v) {
 
 /* ── Tab switch ── */
 function switchTab(id) {
-  ['plan','brands','weight'].forEach(t=>{
+  ['plan','brands','weight','camp'].forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===id?'flex':'none';
     document.getElementById('tab-'+t).style.flexDirection=t===id?'column':'';
   });
   document.querySelectorAll('.tab').forEach((el,i)=>{
-    el.classList.toggle('on',['plan','brands','weight'][i]===id);
+    el.classList.toggle('on',['plan','brands','weight','camp'][i]===id);
   });
   if (id==='brands') renderDBList();
   if (id==='weight') { if(!customWeights) resetWeights(); renderWeightSliders(); }
+  if (id==='camp') renderCampaignTab();
 }
 
 /* ── DB list ── */
 function renderDBList() {
   const q=(document.getElementById('db-search').value||'').toLowerCase();
   const el=document.getElementById('db-list');
-  const keys=Object.keys(DB).filter(k=>!q||k.includes(q)).sort();
+  const keys=Object.keys(DB).filter(k=>{
+    if (!q) return true;
+    const ko = DB_KO[k] || '';
+    return k.includes(q) || ko.includes(q);
+  }).sort();
   el.innerHTML=keys.map(k=>{
     const d=DB[k];const pt=getPerfType(d.ctr,d.cvr);
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--b1);border-radius:var(--rad-sm);margin-bottom:4px">
+    const koName = DB_KO[k] ? `<span style="font-size:10px;color:var(--t3)">${DB_KO[k]}</span>` : '';
+    const hasCamp = CAMPAIGNS.some(c=>c.dbKey===k);
+    const campTag = hasCamp ? `<span style="font-size:9px;background:rgba(245,166,35,.12);color:var(--am);border:1px solid var(--ambdr);border-radius:3px;padding:1px 5px;font-family:'JetBrains Mono',monospace">기획전</span>` : '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--b1);border-radius:var(--rad-sm);margin-bottom:4px${hasCamp?';border-left:2px solid var(--ambdr)':''}">
       <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span style="font-size:12px;font-weight:500;font-family:'JetBrains Mono',monospace">${k}</span>
+          ${koName}
           <span class="bdg ${pt.cls}" style="font-size:9px;padding:1px 5px">${pt.label}</span>
+          ${campTag}
         </div>
         <div style="font-size:10px;color:var(--t3);margin-top:2px;font-family:'JetBrains Mono',monospace">CTR ${d.ctr}% · CVR ${d.cvr}% · ROAS ${d.roas.toLocaleString()}%</div>
       </div>
     </div>`;
   }).join('');
+}
+
+/* ── Campaign tab ── */
+let campTypeFilter = 'all';
+
+function setCampType(t) {
+  campTypeFilter = t;
+  document.querySelectorAll('#camp-type-pills .type-pill').forEach((el, i) => {
+    el.classList.toggle('on', el.textContent === (t==='all'?'전체':t));
+  });
+  renderCampaignTab();
+}
+
+function typeClass(t) {
+  if (t==='위탁') return 'camp-type-w';
+  if (t==='외부채널') return 'camp-type-e';
+  if (t==='스토어') return 'camp-type-s';
+  if (t==='통합') return 'camp-type-t';
+  if (t==='PB') return 'camp-type-p';
+  return '';
+}
+
+function renderCampaignTab() {
+  const period = document.getElementById('camp-period').value;
+  const filtered = CAMPAIGNS.filter(c => {
+    if (period !== 'all' && c.period !== period) return false;
+    if (campTypeFilter !== 'all' && c.type !== campTypeFilter) return false;
+    return true;
+  });
+
+  const total = filtered.length;
+  const matched = filtered.filter(c=>c.dbKey).length;
+
+  // Group by period if showing all
+  let html = `<div style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:8px">${total}개 기획전 · DB 매칭 <span style="color:var(--g)">${matched}개</span></div>`;
+
+  if (period === 'all') {
+    const periods = [...new Set(CAMPAIGNS.map(c=>c.period))];
+    periods.forEach(p => {
+      const items = filtered.filter(c=>c.period===p);
+      if (!items.length) return;
+      html += `<div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--t3);letter-spacing:.05em;margin:10px 0 5px;text-transform:uppercase">${p}</div>`;
+      html += items.map(c => renderCampItem(c)).join('');
+    });
+  } else {
+    html += filtered.map(c => renderCampItem(c)).join('');
+  }
+
+  document.getElementById('camp-list').innerHTML = html || '<div style="font-size:12px;color:var(--t3);text-align:center;padding:20px 0">해당 조건의 기획전이 없습니다</div>';
+}
+
+function renderCampItem(c) {
+  const dbInfo = c.dbKey && DB[c.dbKey] ? `<span style="font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--g);background:var(--gdim);border:1px solid var(--gbdr);border-radius:3px;padding:1px 5px">${c.dbKey}</span>` : '';
+  const codeTag = c.code ? `<span style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace">#${c.code}</span>` : '';
+  return `<div class="camp-item${c.dbKey?' has-db':''}">
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap">
+      <span class="bdg ${typeClass(c.type)}" style="font-size:9px;padding:1px 6px">${c.type}</span>
+      <span style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace">${c.mgr}</span>
+      ${dbInfo}${codeTag}
+    </div>
+    <div style="font-size:12px;color:var(--t1);line-height:1.4">${c.name}</div>
+  </div>`;
+}
+
+function importCampaignBrands() {
+  const period = document.getElementById('camp-period').value;
+  const src = period === 'all' ? CAMPAIGNS : CAMPAIGNS.filter(c=>c.period===period);
+  const brands = [...new Set(src.filter(c=>c.type==='위탁'&&c.dbKey).map(c=>c.dbKey))];
+  if (!brands.length) { toast('불러올 매칭 브랜드가 없습니다'); return; }
+  document.getElementById('brand-input').value = brands.join('\n');
+  renderDiscountInputs();
+  switchTab('plan');
+  toast(`${brands.length}개 브랜드 불러오기 완료`);
 }
 
 /* ── Helpers ── */
@@ -934,7 +1206,7 @@ function toast(msg){
 }
 
 // Tab display fix
-['plan','brands','weight'].forEach(t=>{
+['plan','brands','weight','camp'].forEach(t=>{
   const el=document.getElementById('tab-'+t);
   if(t==='plan'){el.style.display='flex';el.style.flexDirection='column';}
   else el.style.display='none';
