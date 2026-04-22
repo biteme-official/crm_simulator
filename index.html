@@ -945,8 +945,8 @@ function renderPushItems() {
     `<div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding:6px 2px 3px;border-bottom:1px solid var(--b1);margin-bottom:4px">${label} <span style="font-weight:400">(${count})</span></div>`;
 
   let html = '';
-  if (hasCamp)  html += sectionHeader('기획전 · 최우선', campList.length)  + campList.map(renderRow).join('');
-  if (hasBrand) html += (hasCamp ? '<div style="height:8px"></div>' : '') + sectionHeader('브랜드 · 성과순', brandList.length) + brandList.map(renderRow).join('');
+  if (hasCamp)  html += sectionHeader('통합소재 · 최우선', campList.length)  + campList.map(renderRow).join('');
+  if (hasBrand) html += (hasCamp ? '<div style="height:8px"></div>' : '') + sectionHeader('브랜드소재 · 성과순', brandList.length) + brandList.map(renderRow).join('');
   el.innerHTML = html;
 }
 
@@ -1136,8 +1136,8 @@ function renderDayCard(dp, allDayPlans) {
         const roasColor = b.estRoas > PAVG.roas ? 'var(--g)' : b.estRoas > 800 ? 'var(--am)' : 'var(--re)';
         const discTag = b.discount > 0 ? `<span style="font-size:9px;color:var(--am);font-family:'JetBrains Mono',monospace"> -${b.discount}%</span>` : '';
         const pushTag = b.pushType === 'campaign'
-          ? `<span style="font-size:8px;background:var(--amdim);color:var(--am);border:1px solid var(--ambdr);border-radius:3px;padding:1px 4px;font-family:'JetBrains Mono',monospace">기획전</span>`
-          : `<span style="font-size:8px;background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr);border-radius:3px;padding:1px 4px;font-family:'JetBrains Mono',monospace">브랜드</span>`;
+          ? `<span style="font-size:8px;background:var(--amdim);color:var(--am);border:1px solid var(--ambdr);border-radius:3px;padding:1px 4px;font-family:'JetBrains Mono',monospace">통합소재</span>`
+          : `<span style="font-size:8px;background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr);border-radius:3px;padding:1px 4px;font-family:'JetBrains Mono',monospace">브랜드소재</span>`;
         return `<div class="brand-slot" style="${b.pushType==='campaign'?'border-left:2px solid var(--ambdr)':'border-left:2px solid var(--blbdr)'}">
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${pushTag}<div class="slot-name" style="min-width:0">${b.name}${discTag}</div></div>
@@ -1202,7 +1202,7 @@ function renderTableView() {
         <tr>
           <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2)">${r.date}</td>
           <td style="font-weight:500;font-family:'JetBrains Mono',monospace">${r.name}</td>
-          <td><span style="font-size:9px;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;${r.pushType==='campaign'?'background:var(--amdim);color:var(--am);border:1px solid var(--ambdr)':'background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr)'}">${r.pushType==='campaign'?'기획전':'브랜드'}</span></td>
+          <td><span style="font-size:9px;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;${r.pushType==='campaign'?'background:var(--amdim);color:var(--am);border:1px solid var(--ambdr)':'background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr)'}">${r.pushType==='campaign'?'통합소재':'브랜드소재'}</span></td>
           <td><span class="bdg ${r.pt.cls}">${r.pt.label}</span></td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.discount>0?'var(--am)':'var(--t3)'}">${r.discount>0?'-'+r.discount+'%':'-'}</td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace">${r.budget.toLocaleString()}</td>
