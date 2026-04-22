@@ -565,17 +565,17 @@ const CAMPAIGNS = [
   {period:'4월 2주',mgr:'김소희',type:'외부채널',name:'[카톡 선물하기] 주간행사',code:'',dbKey:null},
   {period:'4월 2주',mgr:'김소희',type:'외부채널',name:'[29CM] 4월 포커스 기획전_바잇미',code:'',dbKey:null},
   {period:'4월 2주',mgr:'김소희',type:'외부채널',name:'[29CM] 4월 반려동물 상품기획전',code:'',dbKey:null},
-  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'트러스티푸드 신상 코코넛 터키츄 타임딜',code:'',dbKey:'trustyfood'},
-  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'트러스티푸드 신상 터키츄&살라미칩 출시',code:'',dbKey:'trustyfood'},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'트러스티푸드 신상 코코넛 터키츄 타임딜',code:'',dbKey:'trustyfood',campCode:'100006144'},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'트러스티푸드 신상 터키츄&살라미칩 출시',code:'',dbKey:'trustyfood',campCode:'100006144'},
   {period:'4월 2주',mgr:'신유진',type:'통합',name:'4월 메인기획전',code:'100006144',dbKey:null},
   {period:'4월 2주',mgr:'신유진',type:'통합',name:'4월 메인기획전_봄에디션특가',code:'100006148',dbKey:null},
   {period:'4월 2주',mgr:'신유진',type:'통합',name:'4월 메인기획전_럭키박스',code:'100006148',dbKey:null},
-  {period:'4월 2주',mgr:'김수빈',type:'위탁',name:'분독 4월 메인기획전 20%쿠폰',code:'',dbKey:'boondog'},
+  {period:'4월 2주',mgr:'김수빈',type:'위탁',name:'분독 4월 메인기획전 20%쿠폰',code:'',dbKey:'boondog',campCode:'100006144'},
   {period:'4월 2주',mgr:'김수빈',type:'위탁',name:'간증폭발 고함량 영양제, 닥터카엘 신규입점',code:'',dbKey:null},
   {period:'4월 2주',mgr:'신유진',type:'위탁',name:'렘미끼 링곤베리 9900원 선착순 체험특가',code:'100006150',dbKey:null},
   {period:'4월 2주',mgr:'신유진',type:'PB',name:'알배추 노즈워크 오픈할인',code:'',dbKey:null},
   {period:'4월 2주',mgr:'박규리',type:'위탁',name:'폼포라펫 역대 최저가 20%쿠폰위크',code:'100006102',dbKey:null},
-  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'앤블랭크 26ss 신상위크',code:'100006106',dbKey:'andblank'},
+  {period:'4월 2주',mgr:'박규리',type:'위탁',name:'앤블랭크 26ss 신상위크',code:'100006106',dbKey:'andblank',campCode:'100006144'},
   {period:'4월 2주',mgr:'박규리',type:'위탁',name:'누우띠&다이노탱 콜라보위크',code:'100006128',dbKey:'noutti'},
   {period:'4월 2주',mgr:'김수빈',type:'위탁',name:'나만의 맞춤 가방, 구루구루 바잇미 최대 혜택',code:'100006107',dbKey:'guruguru'},
   {period:'4월 2주',mgr:'이지윤',type:'스토어',name:'[바잇미] 4월 라이프위크_오늘의브랜드',code:'5002651929',dbKey:null},
@@ -626,8 +626,8 @@ const CAMPAIGNS = [
   {period:'4월 4주',mgr:'이지윤',type:'스토어',name:'[바잇미] 신상위크',code:'5002669518',dbKey:null},
   {period:'4월 4주',mgr:'이지윤',type:'스토어',name:'[바잇미] 라이브',code:'1888452',dbKey:null},
   // 4월 5주차
-  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'베베페페 의류 타임딜',code:'',dbKey:'bebepepe'},
-  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'베베페페 최대 82%할인',code:'100006160',dbKey:'bebepepe'},
+  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'베베페페 의류 타임딜',code:'',dbKey:'bebepepe',campCode:'100006186'},
+  {period:'4월 5주',mgr:'박규리',type:'위탁',name:'베베페페 최대 82%할인',code:'100006160',dbKey:'bebepepe',campCode:'100006186'},
   {period:'4월 5주',mgr:'김수빈',type:'통합',name:'4월 바이잇데이',code:'100006186',dbKey:null},
   {period:'4월 5주',mgr:'김수빈',type:'위탁',name:'패리스독 26SS 신상출시',code:'100006194',dbKey:'parisdog'},
   {period:'4월 5주',mgr:'신유진',type:'위탁',name:'누핀 품절대란 누누스낵 프리오더 오픈',code:'100006197',dbKey:'noopyn'},
@@ -867,7 +867,7 @@ function loadWeekBrands() {
     campItems.push({ id, dbKey:null, name:shortName, koName:`${c.type} · ${c.mgr}`, pushType:'campaign', include:true, discount:0, _score:999 });
   });
 
-  // 이 주차의 통합 기획전명 (브랜드에 campRef로 연결)
+  // 이 주차의 통합 기획전 (campCode 기반 연결)
   const mainCamp = weekCamps.find(c => c.type === '통합');
   const campRefName = mainCamp
     ? (mainCamp.name.length > 12 ? mainCamp.name.slice(0,12)+'…' : mainCamp.name)
@@ -882,8 +882,14 @@ function loadWeekBrands() {
     const koName = DB_KO[resolvedKey] || c.name.split(' ')[0];
     const dbData = DB[resolvedKey];
     const { score, pt } = dbData ? calcBrandScore(dbData) : { score:0, pt:{key:'low'} };
-    const isGood = pt.key !== 'low'; // 성과저조만 자동 제외
-    brandItems.push({ id:resolvedKey, dbKey:resolvedKey, name:resolvedKey, koName, pushType:'brand', include:isGood, discount:0, _score:score, campRef:campRefName });
+    const isGood = pt.key !== 'low';
+    // campRef: CAMPAIGNS의 campCode가 mainCamp.code와 일치하는 경우만 연결
+    const inMainCamp = mainCamp && weekCamps.some(wc =>
+      wc.type === '위탁' &&
+      (wc.dbKey === resolvedKey || detectDbKey(wc.name) === resolvedKey) &&
+      wc.campCode === mainCamp.code
+    );
+    brandItems.push({ id:resolvedKey, dbKey:resolvedKey, name:resolvedKey, koName, pushType:'brand', include:isGood, discount:0, _score:score, campRef: inMainCamp ? campRefName : null });
   });
 
   // 브랜드 점수 순 정렬 (성과 좋은 것 위로)
