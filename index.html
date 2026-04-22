@@ -855,38 +855,35 @@ function loadWeekBrands() {
 
   const weekCamps = CAMPAIGNS.filter(c => c.period === period);
   const seen = new Set();
-  pushItems = [];
+  const campItems = [];   // 통합/PB 기획전 (최우선)
+  const brandItems = [];  // 위탁 브랜드 (성과 기반 정렬)
 
-  // 위탁 brands → dbKey 자동 탐지 (CAMPAIGNS의 dbKey + detectDbKey 폴백)
-  weekCamps.filter(c => c.type === '위탁').forEach(c => {
-    const resolvedKey = c.dbKey || detectDbKey(c.name);
-    if (!resolvedKey) return;  // DB에 없는 브랜드는 스킵 (PAVG 데이터 없음)
-    if (seen.has(resolvedKey)) return;
-    seen.add(resolvedKey);
-    const koName = DB_KO[resolvedKey] || c.name.split(' ')[0];
-    pushItems.push({ id: resolvedKey, dbKey: resolvedKey, name: resolvedKey, koName, pushType:'brand', include:true, discount:0 });
-  });
-
-  // 위탁 중 DB 미매칭 브랜드 → 기획전 푸시로 추가
-  weekCamps.filter(c => c.type === '위탁').forEach(c => {
-    const resolvedKey = c.dbKey || detectDbKey(c.name);
-    if (resolvedKey) return;  // 이미 처리됨
-    const enKey = KO_EN_ALL[c.name.split(' ')[0]] || null;
-    const id = 'unmatch_' + (c.code || c.name.replace(/\s/g,'').slice(0,12));
-    if (seen.has(id)) return;
-    seen.add(id);
-    const shortName = c.name.length > 20 ? c.name.slice(0,20)+'…' : c.name;
-    pushItems.push({ id, dbKey:null, name:shortName, koName:`위탁(DB미등록) · ${c.mgr}`, pushType:'campaign', include:false, discount:0 });
-  });
-
-  // 통합/PB → 기획전 푸시
+  // ① 통합/PB → 기획전 푸시 (최우선)
   weekCamps.filter(c => (c.type==='통합'||c.type==='PB') && c.name).forEach(c => {
     const id = 'camp_' + (c.code||c.name.replace(/\s/g,''));
     if (seen.has(id)) return;
     seen.add(id);
     const shortName = c.name.length > 18 ? c.name.slice(0,18)+'…' : c.name;
-    pushItems.push({ id, dbKey:null, name:shortName, koName:`${c.type} · ${c.mgr}`, pushType:'campaign', include:true, discount:0 });
+    campItems.push({ id, dbKey:null, name:shortName, koName:`${c.type} · ${c.mgr}`, pushType:'campaign', include:true, discount:0, _score:999 });
   });
+
+  // ② 위탁 브랜드 → DB 매칭 있는 것만 (성과 기반 include 자동 결정)
+  weekCamps.filter(c => c.type === '위탁').forEach(c => {
+    const resolvedKey = c.dbKey || detectDbKey(c.name);
+    if (!resolvedKey) return;
+    if (seen.has(resolvedKey)) return;
+    seen.add(resolvedKey);
+    const koName = DB_KO[resolvedKey] || c.name.split(' ')[0];
+    const dbData = DB[resolvedKey];
+    const { score, pt } = dbData ? calcBrandScore(dbData) : { score:0, pt:{key:'low'} };
+    const isGood = pt.key !== 'low'; // 성과저조만 자동 제외
+    brandItems.push({ id:resolvedKey, dbKey:resolvedKey, name:resolvedKey, koName, pushType:'brand', include:isGood, discount:0, _score:score });
+  });
+
+  // 브랜드 점수 순 정렬 (성과 좋은 것 위로)
+  brandItems.sort((a, b) => b._score - a._score);
+
+  pushItems = [...campItems, ...brandItems];
 
   // 주차별 날짜 자동 세팅
   if (PERIOD_DATES[period]) {
@@ -902,7 +899,10 @@ function loadWeekBrands() {
   document.getElementById('camp-name').value = integratedNames.length ? period+' '+integratedNames[0].slice(0,10) : period+' 기획전';
 
   renderPushItems();
-  toast(`${pushItems.length}개 발송 대상 로드 완료`);
+  const brandIncluded = pushItems.filter(p=>p.pushType==='brand'&&p.include).length;
+  const brandTotal = pushItems.filter(p=>p.pushType==='brand').length;
+  const campTotal  = pushItems.filter(p=>p.pushType==='campaign').length;
+  toast(`기획전 ${campTotal}개 · 브랜드 ${brandIncluded}/${brandTotal}개 로드 완료`);
 }
 
 function renderPushItems() {
@@ -912,7 +912,12 @@ function renderPushItems() {
 
   if (!pushItems.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = pushItems.map(p => {
+  const campList  = pushItems.filter(p => p.pushType === 'campaign');
+  const brandList = pushItems.filter(p => p.pushType === 'brand');
+  const hasCamp   = campList.length > 0;
+  const hasBrand  = brandList.length > 0;
+
+  const renderRow = (p) => {
     const dbInfo = p.dbKey && DB[p.dbKey] ? getPerfType(DB[p.dbKey].ctr, DB[p.dbKey].cvr) : null;
     const badge = dbInfo ? `<span class="bdg ${dbInfo.cls}" style="font-size:8px;padding:1px 4px">${dbInfo.label}</span>` : '';
     return `<div class="pi-row pi-${p.pushType==='brand'?'brand':'campaign'}${p.include?'':' off'}" id="pirow-${p.id}">
@@ -934,7 +939,15 @@ function renderPushItems() {
         <span style="font-size:10px;color:var(--t3)">%</span>
       </div>
     </div>`;
-  }).join('');
+  };
+
+  const sectionHeader = (label, count) =>
+    `<div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding:6px 2px 3px;border-bottom:1px solid var(--b1);margin-bottom:4px">${label} <span style="font-weight:400">(${count})</span></div>`;
+
+  let html = '';
+  if (hasCamp)  html += sectionHeader('기획전 · 최우선', campList.length)  + campList.map(renderRow).join('');
+  if (hasBrand) html += (hasCamp ? '<div style="height:8px"></div>' : '') + sectionHeader('브랜드 · 성과순', brandList.length) + brandList.map(renderRow).join('');
+  el.innerHTML = html;
 }
 
 function togglePushItem(id, checked) {
