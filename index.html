@@ -867,6 +867,12 @@ function loadWeekBrands() {
     campItems.push({ id, dbKey:null, name:shortName, koName:`${c.type} · ${c.mgr}`, pushType:'campaign', include:true, discount:0, _score:999 });
   });
 
+  // 이 주차의 통합 기획전명 (브랜드에 campRef로 연결)
+  const mainCamp = weekCamps.find(c => c.type === '통합');
+  const campRefName = mainCamp
+    ? (mainCamp.name.length > 12 ? mainCamp.name.slice(0,12)+'…' : mainCamp.name)
+    : null;
+
   // ② 위탁 브랜드 → DB 매칭 있는 것만 (성과 기반 include 자동 결정)
   weekCamps.filter(c => c.type === '위탁').forEach(c => {
     const resolvedKey = c.dbKey || detectDbKey(c.name);
@@ -877,7 +883,7 @@ function loadWeekBrands() {
     const dbData = DB[resolvedKey];
     const { score, pt } = dbData ? calcBrandScore(dbData) : { score:0, pt:{key:'low'} };
     const isGood = pt.key !== 'low'; // 성과저조만 자동 제외
-    brandItems.push({ id:resolvedKey, dbKey:resolvedKey, name:resolvedKey, koName, pushType:'brand', include:isGood, discount:0, _score:score });
+    brandItems.push({ id:resolvedKey, dbKey:resolvedKey, name:resolvedKey, koName, pushType:'brand', include:isGood, discount:0, _score:score, campRef:campRefName });
   });
 
   // 브랜드 점수 순 정렬 (성과 좋은 것 위로)
@@ -928,6 +934,7 @@ function renderPushItems() {
           ${badge}
         </div>
         ${p.koName ? `<div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.koName}</div>` : ''}
+        ${p.campRef ? `<div style="font-size:9px;color:var(--am);opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">↳ ${p.campRef}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
         <button class="ptb ptb-brand${p.pushType==='brand'?' on':''}" onclick="setPushType('${p.id}','brand')">브랜드</button>
@@ -1032,7 +1039,7 @@ function runPlanner() {
     };
     const discount = item.discount || 0;
     const {score, pt} = calcBrandScore(d, discount);
-    return { name: item.name, dbKey: item.dbKey, pushType: item.pushType, score, pt, d, discount };
+    return { name: item.name, dbKey: item.dbKey, pushType: item.pushType, campRef: item.campRef||null, score, pt, d, discount };
   });
   scored.sort((a,b) => b.score - a.score);
 
@@ -1141,7 +1148,7 @@ function renderDayCard(dp, allDayPlans) {
         return `<div class="brand-slot" style="${b.pushType==='campaign'?'border-left:2px solid var(--ambdr)':'border-left:2px solid var(--blbdr)'}">
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${pushTag}<div class="slot-name" style="min-width:0">${b.name}${discTag}</div></div>
-            <div class="slot-sends">${b.sends.toLocaleString()}명 · <span class="bdg ${b.pt.cls}" style="font-size:9px;padding:1px 5px">${b.pt.label}</span></div>
+            <div class="slot-sends">${b.sends.toLocaleString()}명 · <span class="bdg ${b.pt.cls}" style="font-size:9px;padding:1px 5px">${b.pt.label}</span>${b.campRef ? ` <span style="font-size:8px;color:var(--am);opacity:.8">↳${b.campRef}</span>` : ''}</div>
           </div>
           <div class="slot-roas" style="color:${roasColor}">${b.estRoas.toFixed(0)}%</div>
         </div>`;
@@ -1181,7 +1188,7 @@ function renderTableView() {
       const dow = d.getDay()===0?6:d.getDay()-1;
       rows.push({
         date:`${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[dow]})`,
-        name: b.name, pt: b.pt, pushType: b.pushType||'brand', discount: b.discount||0,
+        name: b.name, pt: b.pt, pushType: b.pushType||'brand', campRef: b.campRef||null, discount: b.discount||0,
         budget: b.budget, sends: b.sends,
         ctr: b.d.ctr, cvr: b.d.cvr,
         estRev: b.estRev, estRoas: b.estRoas,
@@ -1193,7 +1200,7 @@ function renderTableView() {
     <div style="overflow-x:auto">
     <table class="tbl">
       <thead><tr>
-        <th>발송일</th><th>브랜드</th><th>푸시</th><th>성과유형</th><th style="text-align:right">할인율</th>
+        <th>발송일</th><th>브랜드</th><th>푸시</th><th>기획전</th><th>성과유형</th><th style="text-align:right">할인율</th>
         <th style="text-align:right">예산</th><th style="text-align:right">모수</th>
         <th style="text-align:right">CTR</th><th style="text-align:right">CVR</th>
         <th style="text-align:right">예상 매출</th><th style="text-align:right">예상 ROAS</th>
@@ -1203,6 +1210,7 @@ function renderTableView() {
           <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2)">${r.date}</td>
           <td style="font-weight:500;font-family:'JetBrains Mono',monospace">${r.name}</td>
           <td><span style="font-size:9px;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;${r.pushType==='campaign'?'background:var(--amdim);color:var(--am);border:1px solid var(--ambdr)':'background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr)'}">${r.pushType==='campaign'?'통합소재':'브랜드소재'}</span></td>
+          <td style="font-size:10px;color:var(--am);font-family:'JetBrains Mono',monospace">${r.campRef||'-'}</td>
           <td><span class="bdg ${r.pt.cls}">${r.pt.label}</span></td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.discount>0?'var(--am)':'var(--t3)'}">${r.discount>0?'-'+r.discount+'%':'-'}</td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace">${r.budget.toLocaleString()}</td>
