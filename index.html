@@ -858,8 +858,8 @@ function loadWeekBrands() {
   const campItems = [];   // 통합/PB 기획전 (최우선)
   const brandItems = [];  // 위탁 브랜드 (성과 기반 정렬)
 
-  // ① 통합/PB → 기획전 푸시 (최우선)
-  weekCamps.filter(c => (c.type==='통합'||c.type==='PB') && c.name).forEach(c => {
+  // ① 통합 → 기획전 푸시 (최우선, PB 단독기획전 제외)
+  weekCamps.filter(c => c.type==='통합' && c.name).forEach(c => {
     const id = 'camp_' + (c.code||c.name.replace(/\s/g,''));
     if (seen.has(id)) return;
     seen.add(id);
