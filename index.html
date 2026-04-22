@@ -469,20 +469,40 @@ let DB = {
   "ziwipeak":{ctr:23.98,cvr:3.76,roas:2808,rev:1917316,sends:3447,purchases:30},
 };
 
-/* ════════════════════════ KO ALIASES ════════════════════════ */
-const DB_KO = {
-  'lulukitchen':'룰루키친','thinklikepet':'씽크라이크펫','andblank':'앤블랭크',
-  'trustyfood':'트러스티푸드','boondog':'분독','hurray':'허레이',
-  'coteacote':'꼬떼아꼬떼','chiot':'쉬오트','oneuru':'오느루',
-  'modernhouse':'모던하우스','montie':'몽띠에','popone':'포포네',
-  'brightkins':'브라이트킨즈','kinikini':'키니키니','bennys':'베니즈',
-  'pawavel':'포우에블','diggo':'디고','guruguru':'구루구루','swiffy':'스위피',
-  'baandddang':'바앤당','freschi':'프레스키','gwt':'gwt','otms':'otms',
-  'bridgedog':'브릿지독','lorenz':'로렌즈','oraeorae':'오래오래',
-  'superchew':'슈퍼츄','thehonestkitchen':'더어네스트키친','stellachewys':'스텔라츄이',
-  'stroll':'스트롤','tiolio':'티올리오','plushpuppy':'플러시퍼피',
+/* ════════════════════════ KO ↔ EN MAPPING ════════════════════════ */
+// 공급사/브랜드코드 시트 기반 전체 매핑 (한글명 → 정규화 영문키)
+const KO_EN_ALL = {
+  '스위피':'swiffy','씽크라이크펫':'thinklikepet','리카리카':'likalika',
+  '일로':'illo','폼포라펫':'pompolarrpet','분독':'boondog','렘미끼':'lemmikki',
+  '닥터카엘':'drkael','룰루키친':'lulukitchen','꼬떼아꼬떼':'coteacote',
+  '바야':'vaya','쉬오트':'chiot','디고':'diggo','버디벨트':'buddybelt',
+  '허레이':'hurray','벨체르':'belcher','인히어런트':'inherent','아더마스':'othermars',
+  '트러스티푸드':'trustyfood','브라이트킨즈':'brightkins','키니키니':'kinikini',
+  '몽띠에':'montie','몽그리':'mongree','오느루':'oneuru','베니즈':'bennys',
+  '포포네':'popone','베베페페':'bebepepe','패리스독':'parisdog','포우에블':'pawavel',
+  '디바크':'dibaq','디얼스코':'dearsco','모던하우스':'modernhouse','닥터뉴토':'drnuto',
+  '톰리프':'tomlif','펫츠랜드':'petsland','빌리스벳':'billysvet','누핀':'noopyn',
+  '앤블랭크':'andblank','구루구루':'guruguru','뮤니쿤트':'munikund',
+  '두랑루랑':'durangrurang','쉬오트':'chiot','브릿지독':'bridgedog',
+  '오래오래':'oraeorae','어썸퍼피':'awesomepuppy','베니즈':'bennys',
 };
-const DB_KO_REV = Object.fromEntries(Object.entries(DB_KO).map(([k,v])=>[v,k]));
+
+// DB에 있는 브랜드만 필터링한 매핑 (자동 dbKey 탐지용)
+const KO_DB_MAP = Object.fromEntries(
+  Object.entries(KO_EN_ALL).filter(([,en]) => !!DB[en])
+);
+
+// DB 역방향 (영문키 → 한글명)
+const DB_KO = Object.fromEntries(Object.entries(KO_DB_MAP).map(([ko,en])=>[en,ko]));
+const DB_KO_REV = KO_DB_MAP;
+
+// 기획전 브랜드명에서 DB 키 자동 탐지
+function detectDbKey(name) {
+  for (const [ko, en] of Object.entries(KO_DB_MAP)) {
+    if (name.startsWith(ko) || name.includes(ko)) return en;
+  }
+  return null;
+}
 
 /* ════════════════════════ CAMPAIGNS ════════════════════════ */
 const CAMPAIGNS = [
@@ -782,11 +802,26 @@ function loadWeekBrands() {
   const seen = new Set();
   pushItems = [];
 
-  // 위탁 brands with DB match → 브랜드 푸시
-  weekCamps.filter(c => c.type === '위탁' && c.dbKey).forEach(c => {
-    if (seen.has(c.dbKey)) return;
-    seen.add(c.dbKey);
-    pushItems.push({ id: c.dbKey, dbKey: c.dbKey, name: c.dbKey, koName: DB_KO[c.dbKey]||'', pushType:'brand', include:true, discount:0 });
+  // 위탁 brands → dbKey 자동 탐지 (CAMPAIGNS의 dbKey + detectDbKey 폴백)
+  weekCamps.filter(c => c.type === '위탁').forEach(c => {
+    const resolvedKey = c.dbKey || detectDbKey(c.name);
+    if (!resolvedKey) return;  // DB에 없는 브랜드는 스킵 (PAVG 데이터 없음)
+    if (seen.has(resolvedKey)) return;
+    seen.add(resolvedKey);
+    const koName = DB_KO[resolvedKey] || c.name.split(' ')[0];
+    pushItems.push({ id: resolvedKey, dbKey: resolvedKey, name: resolvedKey, koName, pushType:'brand', include:true, discount:0 });
+  });
+
+  // 위탁 중 DB 미매칭 브랜드 → 기획전 푸시로 추가
+  weekCamps.filter(c => c.type === '위탁').forEach(c => {
+    const resolvedKey = c.dbKey || detectDbKey(c.name);
+    if (resolvedKey) return;  // 이미 처리됨
+    const enKey = KO_EN_ALL[c.name.split(' ')[0]] || null;
+    const id = 'unmatch_' + (c.code || c.name.replace(/\s/g,'').slice(0,12));
+    if (seen.has(id)) return;
+    seen.add(id);
+    const shortName = c.name.length > 20 ? c.name.slice(0,20)+'…' : c.name;
+    pushItems.push({ id, dbKey:null, name:shortName, koName:`위탁(DB미등록) · ${c.mgr}`, pushType:'campaign', include:false, discount:0 });
   });
 
   // 통합/PB → 기획전 푸시
