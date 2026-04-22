@@ -667,6 +667,17 @@ const CAMPAIGNS = [
   {period:'5월 4주',mgr:'이지윤',type:'스토어',name:'[바잇미] 5월 라이프위크',code:'',dbKey:null},
 ];
 
+const PERIOD_DATES = {
+  '4월 1주': {start:'2025-04-01', end:'2025-04-06'},
+  '4월 2주': {start:'2025-04-07', end:'2025-04-13'},
+  '4월 3주': {start:'2025-04-14', end:'2025-04-20'},
+  '4월 4주': {start:'2025-04-21', end:'2025-04-26'},
+  '4월 5주': {start:'2025-04-27', end:'2025-05-03'},
+  '5월 2주': {start:'2025-05-05', end:'2025-05-11'},
+  '5월 3주': {start:'2025-05-12', end:'2025-05-18'},
+  '5월 4주': {start:'2025-05-19', end:'2025-05-25'},
+};
+
 const PAVG={ctr:11.51,cvr:3.76,roas:1267};
 const DAYS_KO=['월','화','수','목','금','토','일'];
 /* 실제 DB 기반 요일별 효율 가중치 (월~일)
@@ -876,6 +887,15 @@ function loadWeekBrands() {
     const shortName = c.name.length > 18 ? c.name.slice(0,18)+'…' : c.name;
     pushItems.push({ id, dbKey:null, name:shortName, koName:`${c.type} · ${c.mgr}`, pushType:'campaign', include:true, discount:0 });
   });
+
+  // 주차별 날짜 자동 세팅
+  if (PERIOD_DATES[period]) {
+    document.getElementById('camp-start').value = PERIOD_DATES[period].start;
+    document.getElementById('camp-end').value   = PERIOD_DATES[period].end;
+    customWeights = null;
+    resetWeights();
+    updateBudgetPreview();
+  }
 
   // Set campaign name
   const integratedNames = weekCamps.filter(c=>c.type==='통합').map(c=>c.name);
