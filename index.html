@@ -151,6 +151,17 @@ input[type=range]:focus{outline:none}
 .type-pill{padding:3px 9px;font-size:10px;border-radius:20px;cursor:pointer;border:1px solid var(--b1);color:var(--t3);font-family:'JetBrains Mono',monospace;transition:all .15s;background:transparent}
 .type-pill:hover{border-color:var(--b2);color:var(--t2)}
 .type-pill.on{background:var(--bldim);border-color:var(--blbdr);color:var(--bl)}
+
+/* Push items */
+.pi-row{display:flex;align-items:center;gap:6px;padding:7px 9px;background:var(--bg2);border:1px solid var(--b1);border-radius:var(--rad-sm);margin-bottom:4px;transition:opacity .15s}
+.pi-row.off{opacity:.45}
+.pi-row.pi-brand{border-left:2px solid var(--blbdr)}
+.pi-row.pi-campaign{border-left:2px solid var(--ambdr)}
+.ptb{padding:2px 6px;font-size:9px;border-radius:3px;border:1px solid var(--b2);background:transparent;color:var(--t3);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .15s;white-space:nowrap}
+.ptb:hover{color:var(--t2);border-color:var(--b3)}
+.ptb.ptb-brand.on{background:var(--bldim);border-color:var(--blbdr);color:var(--bl)}
+.ptb.ptb-camp.on{background:var(--amdim);border-color:var(--ambdr);color:var(--am)}
+.pi-disc{width:36px;padding:3px 5px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px}
 </style>
 </head>
 <body>
@@ -171,18 +182,59 @@ input[type=range]:focus{outline:none}
 
   <!-- PLAN TAB -->
   <div id="tab-plan" class="scr">
+
+    <!-- 기획전 주차 선택 -->
+    <div class="field">
+      <label class="lbl">기획전 주차</label>
+      <div style="display:flex;gap:6px">
+        <select id="camp-week-sel" style="flex:1;font-size:12px">
+          <option value="">— 선택 —</option>
+          <option value="4월 1주">4월 1주</option>
+          <option value="4월 2주">4월 2주</option>
+          <option value="4월 3주">4월 3주</option>
+          <option value="4월 4주">4월 4주</option>
+          <option value="4월 5주">4월 5주</option>
+          <option value="5월 2주">5월 2주</option>
+          <option value="5월 3주">5월 3주</option>
+          <option value="5월 4주">5월 4주</option>
+        </select>
+        <button class="btn btn-bl" onclick="loadWeekBrands()" style="padding:7px 10px;font-size:12px;white-space:nowrap">불러오기</button>
+      </div>
+    </div>
+
+    <!-- 발송 대상 목록 -->
+    <div style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <div class="lbl" style="margin:0">발송 대상 <span id="push-count" style="color:var(--g);font-size:11px"></span></div>
+        <button class="btn-ghost" onclick="clearPushItems()">초기화</button>
+      </div>
+      <div style="display:flex;gap:5px;margin-bottom:7px">
+        <span style="background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr);border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace">브랜드</span>
+        <span style="font-size:10px;color:var(--t3)">브랜드 고객 타겟 · DB 성과 기반</span>
+      </div>
+      <div style="display:flex;gap:5px;margin-bottom:8px">
+        <span style="background:var(--amdim);color:var(--am);border:1px solid var(--ambdr);border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace">기획전</span>
+        <span style="font-size:10px;color:var(--t3)">전체 고객 타겟 · 플랫폼 평균 기반</span>
+      </div>
+      <div id="push-items-list"></div>
+      <div style="font-size:10px;color:var(--t3);margin-top:6px;text-align:center;font-family:'JetBrains Mono',monospace">주차 선택 후 불러오기, 또는 직접 추가</div>
+      <button class="btn btn-full" onclick="showAddItemModal()" style="margin-top:6px;font-size:11px;padding:6px">+ 직접 추가</button>
+    </div>
+
+    <div class="dvd"></div>
+
     <div class="field">
       <label class="lbl">기획전명</label>
-      <input id="camp-name" value="7월 멤버십위크">
+      <input id="camp-name" value="4월 기획전">
     </div>
     <div class="g2" style="margin-bottom:10px">
       <div class="field" style="margin:0">
         <label class="lbl">시작일</label>
-        <input id="camp-start" type="date" value="2025-07-14">
+        <input id="camp-start" type="date" value="2025-04-07">
       </div>
       <div class="field" style="margin:0">
         <label class="lbl">종료일</label>
-        <input id="camp-end" type="date" value="2025-07-20">
+        <input id="camp-end" type="date" value="2025-04-13">
       </div>
     </div>
     <div class="field">
@@ -198,7 +250,7 @@ input[type=range]:focus{outline:none}
     <div class="dvd"></div>
 
     <div class="field">
-      <label class="lbl">주간 총 광고 예산 (원)</label>
+      <label class="lbl">주간 총 예산 (원)</label>
       <input id="total-budget" type="number" value="3000000" step="100000" oninput="updateBudgetPreview()">
     </div>
     <div class="g2" style="margin-bottom:10px">
@@ -207,7 +259,7 @@ input[type=range]:focus{outline:none}
         <input id="unit-cost" type="number" value="20">
       </div>
       <div class="field" style="margin:0">
-        <label class="lbl">하루 최대 브랜드 수</label>
+        <label class="lbl">하루 최대 발송 수</label>
         <input id="max-brands-day" type="number" value="3" min="1" max="8">
       </div>
     </div>
@@ -229,41 +281,6 @@ input[type=range]:focus{outline:none}
         <span style="color:var(--t2)">총 발송 가능 모수</span>
         <span id="prev-sends" style="font-family:'JetBrains Mono',monospace;color:var(--g)">150,000명</span>
       </div>
-    </div>
-
-    <div class="dvd"></div>
-
-    <div style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div class="lbl" style="margin:0">발송 브랜드 리스트</div>
-        <button class="btn-ghost" onclick="document.getElementById('brand-input').value='';renderDiscountInputs()">초기화</button>
-      </div>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:5px">브랜드명 한 줄에 하나씩 (영문 소문자)</div>
-      <textarea id="brand-input" rows="8" oninput="renderDiscountInputs()" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9">lulukitchen
-thehonestkitchen
-forcans
-roma
-ziwipeak
-swiffy
-stellachewys
-k9
-otms
-superchew
-thinkpets
-hurray
-andblank</textarea>
-      <div id="match-status" style="font-size:10px;color:var(--t3);margin-top:4px;font-family:'JetBrains Mono',monospace;text-align:right"></div>
-      <div id="unmatched-list" style="margin-top:6px"></div>
-    </div>
-
-    <div id="discount-section" style="display:none;margin-bottom:10px">
-      <div class="dvd"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div class="lbl" style="margin:0">브랜드별 할인율</div>
-        <button class="btn-ghost" onclick="resetDiscounts()">전체 초기화</button>
-      </div>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:8px">기획전 할인율 입력 시 ROAS 예측에 반영됩니다</div>
-      <div id="discount-inputs"></div>
     </div>
   </div>
 
@@ -758,6 +775,111 @@ function calcBrandScore(d, discount=0){
   return{score:base+ctrBonus+cvrBonus+roasBonus+discBonus,pt};
 }
 
+/* ── Push items state ── */
+let pushItems = [];
+
+function loadWeekBrands() {
+  const period = document.getElementById('camp-week-sel').value;
+  if (!period) { toast('주차를 선택해주세요'); return; }
+
+  const weekCamps = CAMPAIGNS.filter(c => c.period === period);
+  const seen = new Set();
+  pushItems = [];
+
+  // 위탁 brands with DB match → 브랜드 푸시
+  weekCamps.filter(c => c.type === '위탁' && c.dbKey).forEach(c => {
+    if (seen.has(c.dbKey)) return;
+    seen.add(c.dbKey);
+    pushItems.push({ id: c.dbKey, dbKey: c.dbKey, name: c.dbKey, koName: DB_KO[c.dbKey]||'', pushType:'brand', include:true, discount:0 });
+  });
+
+  // 통합/PB → 기획전 푸시
+  weekCamps.filter(c => (c.type==='통합'||c.type==='PB') && c.name).forEach(c => {
+    const id = 'camp_' + (c.code||c.name.replace(/\s/g,''));
+    if (seen.has(id)) return;
+    seen.add(id);
+    const shortName = c.name.length > 18 ? c.name.slice(0,18)+'…' : c.name;
+    pushItems.push({ id, dbKey:null, name:shortName, koName:`${c.type} · ${c.mgr}`, pushType:'campaign', include:true, discount:0 });
+  });
+
+  // Set campaign name
+  const integratedNames = weekCamps.filter(c=>c.type==='통합').map(c=>c.name);
+  document.getElementById('camp-name').value = integratedNames.length ? period+' '+integratedNames[0].slice(0,10) : period+' 기획전';
+
+  renderPushItems();
+  toast(`${pushItems.length}개 발송 대상 로드 완료`);
+}
+
+function renderPushItems() {
+  const el = document.getElementById('push-items-list');
+  const active = pushItems.filter(p=>p.include).length;
+  document.getElementById('push-count').textContent = pushItems.length ? `${active}/${pushItems.length}` : '';
+
+  if (!pushItems.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = pushItems.map(p => {
+    const dbInfo = p.dbKey && DB[p.dbKey] ? getPerfType(DB[p.dbKey].ctr, DB[p.dbKey].cvr) : null;
+    const badge = dbInfo ? `<span class="bdg ${dbInfo.cls}" style="font-size:8px;padding:1px 4px">${dbInfo.label}</span>` : '';
+    return `<div class="pi-row pi-${p.pushType==='brand'?'brand':'campaign'}${p.include?'':' off'}" id="pirow-${p.id}">
+      <input type="checkbox" ${p.include?'checked':''} onchange="togglePushItem('${p.id}',this.checked)" style="flex-shrink:0;cursor:pointer">
+      <div style="flex:1;min-width:0;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:500;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px">${p.name}</span>
+          ${badge}
+        </div>
+        ${p.koName ? `<div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.koName}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+        <button class="ptb ptb-brand${p.pushType==='brand'?' on':''}" onclick="setPushType('${p.id}','brand')">브랜드</button>
+        <button class="ptb ptb-camp${p.pushType==='campaign'?' on':''}" onclick="setPushType('${p.id}','campaign')">기획전</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+        <input type="number" class="pi-disc" min="0" max="90" value="${p.discount}" placeholder="0"
+          oninput="setPushDiscount('${p.id}',this.value)" style="background:var(--bg3);border:1px solid var(--b2);border-radius:3px;color:var(--t1)">
+        <span style="font-size:10px;color:var(--t3)">%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePushItem(id, checked) {
+  const p = pushItems.find(x=>x.id===id);
+  if (p) { p.include = checked; renderPushItems(); }
+}
+
+function setPushType(id, type) {
+  const p = pushItems.find(x=>x.id===id);
+  if (p) { p.pushType = type; renderPushItems(); }
+}
+
+function setPushDiscount(id, val) {
+  const p = pushItems.find(x=>x.id===id);
+  if (p) p.discount = Math.min(90, Math.max(0, parseFloat(val)||0));
+}
+
+function clearPushItems() {
+  pushItems = [];
+  renderPushItems();
+}
+
+function showAddItemModal() {
+  const key = prompt('브랜드 키 입력 (영문) 또는 기획전명:');
+  if (!key) return;
+  const norm = normalizeBrandName(key);
+  const isDB = !!DB[norm];
+  pushItems.push({
+    id: norm + '_' + Date.now(),
+    dbKey: isDB ? norm : null,
+    name: isDB ? norm : key,
+    koName: DB_KO[norm] || '',
+    pushType: isDB ? 'brand' : 'campaign',
+    include: true,
+    discount: 0,
+  });
+  renderPushItems();
+  toast(isDB ? `${norm} 추가됨 (DB 매칭)` : `${key} 추가됨 (기획전 푸시)`);
+}
+
 /* ── main planner ── */
 function runPlanner() {
   const startStr = document.getElementById('camp-start').value;
@@ -768,6 +890,9 @@ function runPlanner() {
   const endDate   = new Date(endStr);
   if (endDate < startDate) { toast('종료일이 시작일보다 앞입니다'); return; }
 
+  const activeItems = pushItems.filter(p => p.include);
+  if (!activeItems.length) { toast('발송 대상을 추가해주세요'); return; }
+
   const totalBudget = parseInt(document.getElementById('total-budget').value)||0;
   const unitCost    = parseInt(document.getElementById('unit-cost').value)||20;
   const maxPerDay   = parseInt(document.getElementById('max-brands-day').value)||3;
@@ -775,7 +900,6 @@ function runPlanner() {
   const campName    = document.getElementById('camp-name').value||'기획전';
 
   const totalDays = Math.round((endDate-startDate)/86400000)+1;
-
   const dates = [];
   for (let i=0;i<totalDays;i++){
     const d=new Date(startDate); d.setDate(startDate.getDate()+i); dates.push(d);
@@ -793,32 +917,18 @@ function runPlanner() {
   const wTotal = wSlice.reduce((a,b)=>a+b,0);
   const dayBudgets = wSlice.map(w => Math.round(totalBudget * w / wTotal));
 
-  const raw = document.getElementById('brand-input').value.trim();
-  const names = [...new Set(raw.split('\n').map(s=>normalizeBrandName(s)).filter(Boolean))];
+  // 브랜드 푸시: DB 성과, 기획전 푸시: PAVG
+  const scored = activeItems.map(item => {
+    const d = (item.pushType === 'brand' && item.dbKey && DB[item.dbKey]) ? DB[item.dbKey] : {
+      ctr: PAVG.ctr, cvr: PAVG.cvr, roas: PAVG.roas, rev: 0, purchases: 0
+    };
+    const discount = item.discount || 0;
+    const {score, pt} = calcBrandScore(d, discount);
+    return { name: item.name, dbKey: item.dbKey, pushType: item.pushType, score, pt, d, discount };
+  });
+  scored.sort((a,b) => b.score - a.score);
 
-  const scored = names.map(name => {
-    const d = DB[name];
-    if (!d) return null;
-    const discount = discountRates[name] || 0;
-    const {score,pt} = calcBrandScore(d, discount);
-    return { name, score, pt, d, discount };
-  }).filter(Boolean);
-  scored.sort((a,b)=>b.score-a.score);
-
-  const unmatched = names.filter(n=>!DB[n]);
-  document.getElementById('match-status').textContent =
-    `${scored.length}개 매칭 / ${unmatched.length > 0 ? unmatched.length+'개 미등록' : '전체 매칭'}`;
-
-  // 미등록 브랜드 표시
-  const unmatchedEl = document.getElementById('unmatched-list');
-  if (unmatched.length > 0) {
-    unmatchedEl.innerHTML = `<div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-family:'JetBrains Mono',monospace">미등록 브랜드</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">
-        ${unmatched.map(n=>`<span style="font-size:10px;font-family:'JetBrains Mono',monospace;background:var(--redim);border:1px solid var(--rebdr);border-radius:4px;padding:2px 6px;color:var(--re)">${n}</span>`).join('')}
-      </div>`;
-  } else {
-    unmatchedEl.innerHTML = '';
-  }
+  const unmatched = [];
 
   const dayPlans = dates.map((d,i) => ({
     date: d, budget: dayBudgets[i],
@@ -842,9 +952,8 @@ function runPlanner() {
       const brand = available[bi];
       const budget = bi === take-1 ? dayBudget - usedBudget : perBrand;
       const sends = Math.round(budget / unitCost);
-      const aov = brand.d.purchases > 0 ? brand.d.rev / brand.d.purchases : 0;
+      const aov = brand.d.purchases > 0 ? brand.d.rev / brand.d.purchases : 15000;
 
-      // 할인율 반영: AOV는 (1-discount)배, CVR은 (1+discount)배
       const discFactor = (brand.discount || 0) / 100;
       const effectiveAOV = aov * (1 - discFactor);
       const effectiveCVR = brand.d.cvr * (1 + discFactor) / 100;
@@ -916,9 +1025,12 @@ function renderDayCard(dp, allDayPlans) {
       dp.brands.map(b => {
         const roasColor = b.estRoas > PAVG.roas ? 'var(--g)' : b.estRoas > 800 ? 'var(--am)' : 'var(--re)';
         const discTag = b.discount > 0 ? `<span style="font-size:9px;color:var(--am);font-family:'JetBrains Mono',monospace"> -${b.discount}%</span>` : '';
-        return `<div class="brand-slot">
+        const pushTag = b.pushType === 'campaign'
+          ? `<span style="font-size:8px;background:var(--amdim);color:var(--am);border:1px solid var(--ambdr);border-radius:3px;padding:1px 4px;font-family:'JetBrains Mono',monospace">기획전</span>`
+          : `<span style="font-size:8px;background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr);border-radius:3px;padding:1px 4px;font-family:'JetBrains Mono',monospace">브랜드</span>`;
+        return `<div class="brand-slot" style="${b.pushType==='campaign'?'border-left:2px solid var(--ambdr)':'border-left:2px solid var(--blbdr)'}">
           <div style="flex:1;min-width:0">
-            <div class="slot-name">${b.name}${discTag}</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${pushTag}<div class="slot-name" style="min-width:0">${b.name}${discTag}</div></div>
             <div class="slot-sends">${b.sends.toLocaleString()}명 · <span class="bdg ${b.pt.cls}" style="font-size:9px;padding:1px 5px">${b.pt.label}</span></div>
           </div>
           <div class="slot-roas" style="color:${roasColor}">${b.estRoas.toFixed(0)}%</div>
@@ -959,7 +1071,7 @@ function renderTableView() {
       const dow = d.getDay()===0?6:d.getDay()-1;
       rows.push({
         date:`${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[dow]})`,
-        name: b.name, pt: b.pt, discount: b.discount||0,
+        name: b.name, pt: b.pt, pushType: b.pushType||'brand', discount: b.discount||0,
         budget: b.budget, sends: b.sends,
         ctr: b.d.ctr, cvr: b.d.cvr,
         estRev: b.estRev, estRoas: b.estRoas,
@@ -971,7 +1083,7 @@ function renderTableView() {
     <div style="overflow-x:auto">
     <table class="tbl">
       <thead><tr>
-        <th>발송일</th><th>브랜드</th><th>유형</th><th style="text-align:right">할인율</th>
+        <th>발송일</th><th>브랜드</th><th>푸시</th><th>성과유형</th><th style="text-align:right">할인율</th>
         <th style="text-align:right">예산</th><th style="text-align:right">모수</th>
         <th style="text-align:right">CTR</th><th style="text-align:right">CVR</th>
         <th style="text-align:right">예상 매출</th><th style="text-align:right">예상 ROAS</th>
@@ -980,6 +1092,7 @@ function renderTableView() {
         <tr>
           <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2)">${r.date}</td>
           <td style="font-weight:500;font-family:'JetBrains Mono',monospace">${r.name}</td>
+          <td><span style="font-size:9px;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;${r.pushType==='campaign'?'background:var(--amdim);color:var(--am);border:1px solid var(--ambdr)':'background:var(--bldim);color:var(--bl);border:1px solid var(--blbdr)'}">${r.pushType==='campaign'?'기획전':'브랜드'}</span></td>
           <td><span class="bdg ${r.pt.cls}">${r.pt.label}</span></td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.discount>0?'var(--am)':'var(--t3)'}">${r.discount>0?'-'+r.discount+'%':'-'}</td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace">${r.budget.toLocaleString()}</td>
@@ -1216,7 +1329,7 @@ function toast(msg){
 resetWeights();
 updateBudgetPreview();
 renderDBList();
-renderDiscountInputs();
+renderPushItems();
 </script>
 </body>
 </html>
