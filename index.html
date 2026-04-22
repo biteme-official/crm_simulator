@@ -155,7 +155,8 @@ input[type=range]:focus{outline:none}
 .type-pill.on{background:var(--bldim);border-color:var(--blbdr);color:var(--bl)}
 
 /* Push items */
-.pi-row{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#fff;border:1px solid var(--b1);border-radius:var(--rad-sm);margin-bottom:4px;transition:opacity .15s;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.pi-row{display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fff;border:1px solid var(--b1);border-radius:var(--rad-sm);margin-bottom:3px;transition:opacity .15s;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.pi-row input[type=checkbox]{width:13px;height:13px;flex-shrink:0;cursor:pointer;accent-color:var(--bl);margin:0}
 .pi-row.off{opacity:.4}
 .pi-row.pi-brand{border-left:3px solid var(--bl)}
 .pi-row.pi-campaign{border-left:3px solid var(--am)}
@@ -895,7 +896,7 @@ function renderPushItems() {
     const dbInfo = p.dbKey && DB[p.dbKey] ? getPerfType(DB[p.dbKey].ctr, DB[p.dbKey].cvr) : null;
     const badge = dbInfo ? `<span class="bdg ${dbInfo.cls}" style="font-size:8px;padding:1px 4px">${dbInfo.label}</span>` : '';
     return `<div class="pi-row pi-${p.pushType==='brand'?'brand':'campaign'}${p.include?'':' off'}" id="pirow-${p.id}">
-      <input type="checkbox" ${p.include?'checked':''} onchange="togglePushItem('${p.id}',this.checked)" style="flex-shrink:0;cursor:pointer">
+      <input type="checkbox" ${p.include?'checked':''} onchange="togglePushItem('${p.id}',this.checked)">
       <div style="flex:1;min-width:0;overflow:hidden">
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
           <span style="font-size:11px;font-weight:500;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px">${p.name}</span>
